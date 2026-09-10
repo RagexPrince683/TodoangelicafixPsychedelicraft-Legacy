@@ -51,7 +51,26 @@ public class DryingRegistry
 
     public static Set<Object> allDryingSources()
     {
-        return dryingRecipes.keySet();
+        return Collections.unmodifiableSet(new LinkedHashSet<>(dryingRecipes.keySet()));
+    }
+
+    /**
+     * A read-only snapshot for recipe viewers. Keys are immutable registry
+     * references (Item, Block, or ore name) or copied ItemStacks; values are
+     * always copied so a client cannot mutate the live recipe registry.
+     */
+    public static Map<Object, ItemStack> dryingRecipes()
+    {
+        Map<Object, ItemStack> recipes = new LinkedHashMap<>();
+        for (Map.Entry<Object, ItemStack> entry : dryingRecipes.entrySet())
+        {
+            Object source = entry.getKey();
+            if (source instanceof ItemStack)
+                source = ((ItemStack) source).copy();
+
+            recipes.put(source, entry.getValue().copy());
+        }
+        return Collections.unmodifiableMap(recipes);
     }
 
     private static boolean matches(ItemStack stack, Object target)

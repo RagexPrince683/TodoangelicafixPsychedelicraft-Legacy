@@ -67,3 +67,10 @@ axis. The historical code does not document whether the resulting cubic offset
 or the per-player tick frequency was intentional, so this change does not invent
 distance, dimension, terrain, or population rules. Developer feedback is still
 needed if those spawn conditions should be narrower.
+
+## Optional Not Enough Items integration
+
+When Not Enough Items 2.7.4-GTNH is installed on the client, Psychedelicraft adds
+Drying, Drink Preparation, and Acquisition pages. NEI is not required on clients
+or dedicated servers. See [the coverage reference](docs/nei-coverage.md) for the
+source-backed coverage matrix and current limitations.

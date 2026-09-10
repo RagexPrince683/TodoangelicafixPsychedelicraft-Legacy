@@ -80,6 +80,11 @@ public class RecipeFillDrink implements IRecipe
         this(recipeOutput, getItemStacks(items));
     }
 
+    public FluidStack getFluidOutput()
+    {
+        return recipeOutput.copy();
+    }
+
     @Override
     public ItemStack getRecipeOutput()
     {

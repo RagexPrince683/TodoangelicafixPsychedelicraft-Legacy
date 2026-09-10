@@ -218,6 +218,29 @@ fluid.psc_caffeine_fluid=Caffeine
 
 fluid.status.maturing=Maturing
 fluid.status.fermenting=Fermenting
+
+nei.psychedelicraft.drying=Drying
+nei.psychedelicraft.drying.time=Base time: wood %ss; iron %ss
+nei.psychedelicraft.drying.conditions=All nine slots must match. Drying speed is light squared times biome heat, squared again. Rain on the table resets progress.
+nei.psychedelicraft.acquisition=Acquisition
+nei.psychedelicraft.drinkPreparation=Drink Preparation
+nei.psychedelicraft.acquire.cannabis.seed=Seeds drop when cannabis is broken (one seed at growth metadata 5 or above), may generate as planted patches when enabled, and may be offered by the Drug Dealer. Offers are not guaranteed.
+nei.psychedelicraft.acquire.cannabis.harvest=Plant on farmland and let the three-block plant grow. At metadata 11, breaking it yields 0-1 buds, 1-3 leaves, and one seed. Generated patches obey the enabled setting and ordered biome filters (cold and hills exclude before plains or forest).
+nei.psychedelicraft.acquire.tobacco.seed=Seeds drop from tobacco at growth metadata 5 or above and may be offered by a Farmer. Generated patches are configuration-dependent; trades are possible, not guaranteed.
+nei.psychedelicraft.acquire.tobacco.harvest=Plant on farmland. A mature metadata-15 section yields 3-7 leaves and one seed. Generation uses ordered biome filters: cold and hills exclude before plains or forest.
+nei.psychedelicraft.acquire.coca.seed=Seeds drop from coca at growth metadata 5 or above and may be offered by the Drug Dealer. Generation and the configured dealer profession are server-dependent.
+nei.psychedelicraft.acquire.coca.harvest=Plant on farmland. At metadata 11, breaking coca yields 2-5 leaves and one seed. Ordered world-generation filters exclude cold, hills, and sparse biomes before plains, forest, or water rules.
+nei.psychedelicraft.acquire.hops.seed=Seeds drop from hops at growth metadata 5 or above and may be offered by a Farmer. Generated patches are configuration-dependent.
+nei.psychedelicraft.acquire.hops.harvest=Plant on farmland. At metadata 11, breaking hops yields 0-1 cones and one seed. Cold and hills filters take precedence over plains and forest generation entries.
+nei.psychedelicraft.acquire.coffee.seed=Coffea cherries are both seed and crop. Mature plants provide cherries; Farmers may also offer cherries. World generation and Farmer drug deals are configuration-dependent.
+nei.psychedelicraft.acquire.coffee.harvest=A ripe coffea section yields 1-3 cherries at effective stage 6 or 2-6 at stage 7. Roast cherries with the normal furnace recipe to obtain coffee beans.
+nei.psychedelicraft.acquire.grapes=Break a fully grown lattice (growth metadata 8) for 1-3 grapes. Shears harvest 1-3 grapes and reset it to its planted state. The lattice itself has a normal crafting recipe.
+nei.psychedelicraft.acquire.peyote=Peyote generates only when enabled in biomes matching both sandy and hot, or both mountain and hot. Breaking a grown peyote drops one block. The Drug Dealer may offer it; neither generation entry nor trade is guaranteed.
+nei.psychedelicraft.acquire.juniper=Juniper trees generate when enabled. Entries are checked in order for hills+cold, forest+cold, then snowy+wasteland. Juniper berry leaves drop a berry and can be right-click harvested; normal leaf decay can also provide saplings.
+nei.psychedelicraft.acquire.mushrooms=Dry nine matching vanilla mushrooms on either Drying Table to obtain three magic mushrooms. This page links the vanilla starting material; see Drying for the process.
+nei.psychedelicraft.acquire.trades=The configured Drug Dealer profession may offer this stack for emeralds. Trade availability and price are selected by Minecraft's villager trade helper and are not guaranteed.
+nei.psychedelicraft.acquire.loot=Dried tobacco can appear in dungeon and mineshaft-corridor chests when dungeon chest additions are enabled. Listed loot weights are selection weights, not direct probabilities.
+nei.psychedelicraft.acquire.unavailable=Harmonium crafting is disabled by default and exists only when enableHarmonium is true. With it disabled there is no implemented survival source.
 fluid.status.distilling=Distilling
 
 itemGroup.psychedelicraft=Psychedelicraft
