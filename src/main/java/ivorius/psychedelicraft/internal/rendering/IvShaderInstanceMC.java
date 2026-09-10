@@ -58,8 +58,8 @@ public class IvShaderInstanceMC {
             } catch (IOException e) {
                 e.printStackTrace();
             } finally {
-                IOUtils.closeQuietly(vShaderRes);
-                IOUtils.closeQuietly(fShaderRes);
+                IOUtils.closeQuietly(vShaderRes.getInputStream());
+                IOUtils.closeQuietly(fShaderRes.getInputStream());
             }
 
             if (vShader != null && fShader != null) {

@@ -198,7 +198,7 @@ public class PSRenderStates
             }
             finally
             {
-                IOUtils.closeQuietly(utilsResource);
+                IOUtils.closeQuietly(utilsResource.getInputStream());
             }
         }
         catch (Exception ex)
