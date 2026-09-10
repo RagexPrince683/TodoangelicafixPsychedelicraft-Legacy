@@ -37,8 +37,23 @@ public class IvShaderInstance {
     private int shaderID = 0;
 
     private boolean shaderActive = false;
+    private int previousShaderID = 0;
 
     private TObjectIntMap<String> uniformLocations = new TObjectIntHashMap<>();
+
+    /* One bounded scratch set per render thread: no per-upload native buffer wrappers and no unsafe sharing. */
+    private static final int SCRATCH_CAPACITY = 256;
+    private static final ThreadLocal<UniformScratch> UNIFORM_SCRATCH = new ThreadLocal<UniformScratch>() {
+        @Override
+        protected UniformScratch initialValue() {
+            return new UniformScratch();
+        }
+    };
+
+    private static class UniformScratch {
+        final IntBuffer ints = BufferUtils.createIntBuffer(SCRATCH_CAPACITY);
+        final FloatBuffer floats = BufferUtils.createFloatBuffer(SCRATCH_CAPACITY);
+    }
 
     public int getShaderID() {
         return shaderID;
@@ -65,6 +80,8 @@ public class IvShaderInstance {
 
             if (fragmentShaderCode != null) fragShader = createShader(fragmentShaderCode, OpenGlHelper.field_153210_r);
         } catch (Exception exc) {
+            if (vertShader > 0) OpenGlHelper.func_153180_a(vertShader);
+            if (fragShader > 0) OpenGlHelper.func_153180_a(fragShader);
             exc.printStackTrace();
             return;
         }
@@ -82,12 +99,17 @@ public class IvShaderInstance {
         }
 
         OpenGlHelper.func_153179_f(shaderID);
-        if (OpenGlHelper.func_153175_a(shaderID, OpenGlHelper.field_153207_o) == GL11.GL_FALSE)
+        if (OpenGlHelper.func_153175_a(shaderID, OpenGlHelper.field_153207_o) == GL11.GL_FALSE) {
             logger.error(OpenGlHelper.func_153166_e(shaderID, 0x8000));
+            deleteShader();
+            return;
+        }
 
         IvOpenGLHelper.glValidateProgram(shaderID);
-        if (OpenGlHelper.func_153175_a(shaderID, IvOpenGLHelper.GL_VALIDATE_STATUS) == GL11.GL_FALSE)
+        if (OpenGlHelper.func_153175_a(shaderID, IvOpenGLHelper.GL_VALIDATE_STATUS) == GL11.GL_FALSE) {
             logger.error(OpenGlHelper.func_153166_e(shaderID, 0x8000));
+            deleteShader();
+        }
     }
 
     private int createShader(String shaderCode, int shaderType) throws Exception {
@@ -123,6 +145,7 @@ public class IvShaderInstance {
         }
 
         shaderActive = true;
+        previousShaderID = GL11.glGetInteger(GL20.GL_CURRENT_PROGRAM);
         OpenGlHelper.func_153161_d(shaderID);
 
         return true;
@@ -133,7 +156,8 @@ public class IvShaderInstance {
             return;
         }
 
-        OpenGlHelper.func_153161_d(0);
+        OpenGlHelper.func_153161_d(previousShaderID);
+        previousShaderID = 0;
         shaderActive = false;
     }
 
@@ -141,100 +165,141 @@ public class IvShaderInstance {
         return shaderActive;
     }
 
-    public boolean setUniformInts(String key, int... ints) {
-        return setUniformIntsOfType(key, ints.length, ints);
+    public boolean setUniformInts(String key, int value) {
+        IntBuffer buffer = prepareInts(1);
+        buffer.put(value).flip();
+        return uploadInts(key, 1, buffer);
     }
 
-    public boolean setUniformIntsOfType(String key, int typeLength, int... ints) {
-        if (shaderID <= 0 || !shaderActive) {
-            return false;
-        }
+    public boolean setUniformInts(String key, int first, int second) {
+        IntBuffer buffer = prepareInts(2);
+        buffer.put(first).put(second).flip();
+        return uploadInts(key, 2, buffer);
+    }
 
-        IntBuffer intBuffer = BufferUtils.createIntBuffer(ints.length);
-        intBuffer.put(ints);
-        intBuffer.position(0);
+    public boolean setUniformInts(String key, int first, int second, int third) {
+        IntBuffer buffer = prepareInts(3);
+        buffer.put(first).put(second).put(third).flip();
+        return uploadInts(key, 3, buffer);
+    }
 
+    public boolean setUniformInts(String key, int first, int second, int third, int fourth) {
+        IntBuffer buffer = prepareInts(4);
+        buffer.put(first).put(second).put(third).put(fourth).flip();
+        return uploadInts(key, 4, buffer);
+    }
+
+    public boolean setUniformInts(String key, int... values) {
+        return setUniformIntsOfType(key, values.length, values);
+    }
+
+    public boolean setUniformIntsOfType(String key, int typeLength, int... values) {
+        return uploadInts(key, typeLength, values, values.length);
+    }
+
+    private boolean uploadInts(String key, int typeLength, int[] values, int length) {
+        IntBuffer buffer = prepareInts(length);
+        buffer.put(values, 0, length).flip();
+        return uploadInts(key, typeLength, buffer);
+    }
+
+    private boolean uploadInts(String key, int typeLength, IntBuffer buffer) {
+        if (shaderID <= 0 || !shaderActive) return false;
+        int location = getUniformLocation(key);
         switch (typeLength) {
-            case 1:
-                OpenGlHelper.func_153181_a(getUniformLocation(key), intBuffer);
-                break;
-            case 2:
-                OpenGlHelper.func_153182_b(getUniformLocation(key), intBuffer);
-                break;
-            case 3:
-                OpenGlHelper.func_153192_c(getUniformLocation(key), intBuffer);
-                break;
-            case 4:
-                OpenGlHelper.func_153162_d(getUniformLocation(key), intBuffer);
-                break;
-            default:
-                throw new IllegalArgumentException();
+            case 1: OpenGlHelper.func_153181_a(location, buffer); break;
+            case 2: OpenGlHelper.func_153182_b(location, buffer); break;
+            case 3: OpenGlHelper.func_153192_c(location, buffer); break;
+            case 4: OpenGlHelper.func_153162_d(location, buffer); break;
+            default: throw new IllegalArgumentException("Uniform vector width must be 1 through 4");
         }
-
         return true;
     }
 
-    public boolean setUniformFloats(String key, float... floats) {
-        return setUniformFloatsOfType(key, floats.length, floats);
+    public boolean setUniformFloats(String key, float value) {
+        FloatBuffer buffer = prepareFloats(1);
+        buffer.put(value).flip();
+        return uploadFloats(key, 1, buffer);
     }
 
-    public boolean setUniformFloatsOfType(String key, int typeLength, float... floats) {
-        if (shaderID <= 0 || !shaderActive) {
-            return false;
-        }
+    public boolean setUniformFloats(String key, float first, float second) {
+        FloatBuffer buffer = prepareFloats(2);
+        buffer.put(first).put(second).flip();
+        return uploadFloats(key, 2, buffer);
+    }
 
-        FloatBuffer floatBuffer = BufferUtils.createFloatBuffer(floats.length);
-        floatBuffer.put(floats);
-        floatBuffer.position(0);
+    public boolean setUniformFloats(String key, float first, float second, float third) {
+        FloatBuffer buffer = prepareFloats(3);
+        buffer.put(first).put(second).put(third).flip();
+        return uploadFloats(key, 3, buffer);
+    }
 
+    public boolean setUniformFloats(String key, float first, float second, float third, float fourth) {
+        FloatBuffer buffer = prepareFloats(4);
+        buffer.put(first).put(second).put(third).put(fourth).flip();
+        return uploadFloats(key, 4, buffer);
+    }
+
+    public boolean setUniformFloats(String key, float... values) {
+        return setUniformFloatsOfType(key, values.length, values);
+    }
+
+    public boolean setUniformFloatsOfType(String key, int typeLength, float... values) {
+        FloatBuffer buffer = prepareFloats(values.length);
+        buffer.put(values).flip();
+        return uploadFloats(key, typeLength, buffer);
+    }
+
+    private boolean uploadFloats(String key, int typeLength, FloatBuffer buffer) {
+        if (shaderID <= 0 || !shaderActive) return false;
+        int location = getUniformLocation(key);
         switch (typeLength) {
-            case 1:
-                OpenGlHelper.func_153168_a(getUniformLocation(key), floatBuffer);
-                break;
-            case 2:
-                OpenGlHelper.func_153177_b(getUniformLocation(key), floatBuffer);
-                break;
-            case 3:
-                OpenGlHelper.func_153191_c(getUniformLocation(key), floatBuffer);
-                break;
-            case 4:
-                OpenGlHelper.func_153159_d(getUniformLocation(key), floatBuffer);
-                break;
-            default:
-                throw new IllegalArgumentException();
+            case 1: OpenGlHelper.func_153168_a(location, buffer); break;
+            case 2: OpenGlHelper.func_153177_b(location, buffer); break;
+            case 3: OpenGlHelper.func_153191_c(location, buffer); break;
+            case 4: OpenGlHelper.func_153159_d(location, buffer); break;
+            default: throw new IllegalArgumentException("Uniform vector width must be 1 through 4");
         }
-
         return true;
     }
 
     public boolean setUniformMatrix(String key, Matrix matrix) {
-        if (shaderID <= 0 || !shaderActive) {
-            return false;
-        }
-
+        if (shaderID <= 0 || !shaderActive) return false;
         int width;
-        if (matrix instanceof Matrix2f) width = 2;
-        else if (matrix instanceof Matrix3f) width = 3;
-        else if (matrix instanceof Matrix4f) width = 4;
-        else throw new IllegalArgumentException();
-
-        FloatBuffer floatBuffer = BufferUtils.createFloatBuffer(width * width);
-        matrix.store(floatBuffer);
-        floatBuffer.position(0);
-
-        switch (width) {
-            case 2:
-                OpenGlHelper.func_153173_a(getUniformLocation(key), false, floatBuffer);
-                break;
-            case 3:
-                OpenGlHelper.func_153189_b(getUniformLocation(key), false, floatBuffer);
-                break;
-            default:
-                OpenGlHelper.func_153160_c(getUniformLocation(key), false, floatBuffer);
-                break;
+        if (matrix instanceof Matrix2f) {
+            width = 2;
+        } else if (matrix instanceof Matrix3f) {
+            width = 3;
+        } else if (matrix instanceof Matrix4f) {
+            width = 4;
+        } else {
+            width = 0;
         }
-
+        if (width == 0) throw new IllegalArgumentException("Unsupported matrix type");
+        FloatBuffer buffer = prepareFloats(width * width);
+        matrix.store(buffer);
+        buffer.flip();
+        int location = getUniformLocation(key);
+        if (width == 2) OpenGlHelper.func_153173_a(location, false, buffer);
+        else if (width == 3) OpenGlHelper.func_153189_b(location, false, buffer);
+        else OpenGlHelper.func_153160_c(location, false, buffer);
         return true;
+    }
+
+    private static IntBuffer prepareInts(int size) {
+        if (size > SCRATCH_CAPACITY) return BufferUtils.createIntBuffer(size);
+        IntBuffer buffer = UNIFORM_SCRATCH.get().ints;
+        buffer.clear();
+        buffer.limit(size);
+        return buffer;
+    }
+
+    private static FloatBuffer prepareFloats(int size) {
+        if (size > SCRATCH_CAPACITY) return BufferUtils.createFloatBuffer(size);
+        FloatBuffer buffer = UNIFORM_SCRATCH.get().floats;
+        buffer.clear();
+        buffer.limit(size);
+        return buffer;
     }
 
     public Integer getUniformLocation(String key) {

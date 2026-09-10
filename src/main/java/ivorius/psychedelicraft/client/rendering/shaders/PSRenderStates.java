@@ -192,7 +192,14 @@ public class PSRenderStates
         try
         {
             IResource utilsResource = Minecraft.getMinecraft().getResourceManager().getResource(new ResourceLocation(Psychedelicraft.MODID, Psychedelicraft.filePathShaders + "shaderUtils.frag"));
-            utils = IOUtils.toString(utilsResource.getInputStream(), Charsets.UTF_8);
+            try
+            {
+                utils = IOUtils.toString(utilsResource.getInputStream(), Charsets.UTF_8);
+            }
+            finally
+            {
+                IOUtils.closeQuietly(utilsResource);
+            }
         }
         catch (Exception ex)
         {
@@ -439,6 +446,9 @@ public class PSRenderStates
 
     public static void apply2DShaders(float ticks, float partialTicks)
     {
+        if (!shader2DEnabled || realtimePingPong == null)
+            return;
+
         Minecraft mc = Minecraft.getMinecraft();
 
         int screenWidth = mc.displayWidth;

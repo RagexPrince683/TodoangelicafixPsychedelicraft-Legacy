@@ -57,6 +57,9 @@ public class IvShaderInstanceMC {
                 fShader = IOUtils.toString(fShaderRes.getInputStream(), Charsets.UTF_8);
             } catch (IOException e) {
                 e.printStackTrace();
+            } finally {
+                IOUtils.closeQuietly(vShaderRes);
+                IOUtils.closeQuietly(fShaderRes);
             }
 
             if (vShader != null && fShader != null) {
