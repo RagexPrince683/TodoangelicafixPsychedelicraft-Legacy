@@ -69,7 +69,7 @@ public class EntityRendererTransformer extends IvClassTransformerClass
                     methodNode.instructions.insertBefore(postNode, list);
                 }
 
-                return true;
+                return preNode != null && postNode != null;
             case "orientCamera":
             {
                 InsnList list = new InsnList();
@@ -120,26 +120,50 @@ public class EntityRendererTransformer extends IvClassTransformerClass
                     LabelNode skipRenderOverlayNode = new LabelNode();
                     methodNode.instructions.insert(skipOverlayNode, skipRenderOverlayNode);
 
+                    AbstractInsnNode overlayArgument = previousExecutable(skipOverlayNode);
+                    AbstractInsnNode overlayRenderer = previousExecutable(overlayArgument);
+                    AbstractInsnNode overlayThis = previousExecutable(overlayRenderer);
+                    if (overlayArgument == null || overlayArgument.getOpcode() != FLOAD
+                        || ((VarInsnNode) overlayArgument).var != 1
+                        || overlayRenderer == null || overlayRenderer.getOpcode() != GETFIELD
+                        || !"net/minecraft/client/renderer/ItemRenderer".equals(
+                            getSrgClassName(((FieldInsnNode) overlayRenderer).desc.substring(1, ((FieldInsnNode) overlayRenderer).desc.length() - 1)))
+                        || overlayThis == null || overlayThis.getOpcode() != ALOAD
+                        || ((VarInsnNode) overlayThis).var != 0)
+                    {
+                        printSubMethodError(className, methodID, "renderBlockOverlay operand stack");
+                        return false;
+                    }
+
                     InsnList preList = new InsnList();
                     preList.add(new VarInsnNode(FLOAD, 1));
                     preList.add(new MethodInsnNode(INVOKESTATIC, "ivorius/psychedelicraftcore/PsycheCoreBusClient", "renderBlockOverlay", getMethodDescriptor(Type.BOOLEAN_TYPE, Type.FLOAT_TYPE), false));
                     preList.add(new JumpInsnNode(IFNE, skipRenderOverlayNode));
-                    methodNode.instructions.insertBefore(skipOverlayNode.getPrevious().getPrevious().getPrevious(), preList);
-
-                    InsnList postList = new InsnList();
-                    methodNode.instructions.insert(skipOverlayNode, postList);
+                    methodNode.instructions.insertBefore(overlayThis, preList);
                 }
 
-                return true;
+                return transformMatrixNode != null && skipOverlayNode != null;
             case "renderWorld":
-                AbstractInsnNode transformNode = IvNodeFinder.findNode(new IvNodeMatcherMethod(INVOKESPECIAL, "func_78476_b" /* renderHand */, "net/minecraft/client/renderer/EntityRenderer", Type.VOID_TYPE, Type.FLOAT_TYPE, Type.INT_TYPE), methodNode);
+                AbstractInsnNode transformNode = IvNodeFinder.findNode(new IvNodeMatcherMethodSRG(INVOKESPECIAL, "func_78476_b" /* renderHand */, "net/minecraft/client/renderer/EntityRenderer", Type.VOID_TYPE, Type.FLOAT_TYPE, Type.INT_TYPE), methodNode);
 
                 if (transformNode != null)
                 {
-                    AbstractInsnNode glClearNode = transformNode.getPrevious().getPrevious().getPrevious().getPrevious().getPrevious().getPrevious();
+                    AbstractInsnNode glClearNode = findPreviousMethodCall(
+                        transformNode,
+                        INVOKESTATIC,
+                        "org/lwjgl/opengl/GL11",
+                        "glClear",
+                        getMethodDescriptor(Type.VOID_TYPE, Type.INT_TYPE));
 
-                    if (glClearNode.getOpcode() == INVOKESTATIC && ((MethodInsnNode) glClearNode).name.equals("glClear") && ((MethodInsnNode) glClearNode).owner.equals("org/lwjgl/opengl/GL11"))
+                    if (glClearNode != null)
                     {
+                        AbstractInsnNode clearMask = previousExecutable(glClearNode);
+                        if (!isIntegerConstant(clearMask))
+                        {
+                            printSubMethodError(className, methodID, "preRenderHand glClear operand stack");
+                            return false;
+                        }
+
                         LabelNode skipGLClearNode = new LabelNode();
                         methodNode.instructions.insert(glClearNode, skipGLClearNode);
 
@@ -147,7 +171,7 @@ public class EntityRendererTransformer extends IvClassTransformerClass
                         preList.add(new VarInsnNode(FLOAD, 1));
                         preList.add(new MethodInsnNode(INVOKESTATIC, "ivorius/psychedelicraftcore/PsycheCoreBusClient", "preRenderHand", getMethodDescriptor(Type.BOOLEAN_TYPE, Type.FLOAT_TYPE), false));
                         preList.add(new JumpInsnNode(IFNE, skipGLClearNode));
-                        methodNode.instructions.insertBefore(glClearNode.getPrevious(), preList);
+                        methodNode.instructions.insertBefore(clearMask, preList);
 
                         InsnList postList = new InsnList();
                         postList.add(new VarInsnNode(FLOAD, 1));
@@ -157,6 +181,7 @@ public class EntityRendererTransformer extends IvClassTransformerClass
                         return true;
                     }
                 }
+                printSubMethodError(className, methodID, "preRenderHand GL11.glClear(I)V");
                 break;
             case "setupFog":
                 List<AbstractInsnNode> glFogiNodes = IvNodeFinder.findNodes(new IvNodeMatcherMethodSRG(INVOKESTATIC, "glFogi", "org/lwjgl/opengl/GL11", null), methodNode);
@@ -214,5 +239,49 @@ public class EntityRendererTransformer extends IvClassTransformerClass
         }
 
         return false;
+    }
+
+    private static AbstractInsnNode previousExecutable(AbstractInsnNode node)
+    {
+        AbstractInsnNode previous = node == null ? null : node.getPrevious();
+        while (previous != null && previous.getOpcode() < 0)
+        {
+            previous = previous.getPrevious();
+        }
+        return previous;
+    }
+
+    private static AbstractInsnNode findPreviousMethodCall(AbstractInsnNode start, int opcode, String owner, String name, String descriptor)
+    {
+        for (AbstractInsnNode node = start.getPrevious(); node != null; node = node.getPrevious())
+        {
+            if (node.getOpcode() == opcode)
+            {
+                MethodInsnNode method = (MethodInsnNode) node;
+                if (owner.equals(method.owner) && name.equals(method.name) && descriptor.equals(method.desc))
+                {
+                    return node;
+                }
+            }
+        }
+        return null;
+    }
+
+    private static boolean isIntegerConstant(AbstractInsnNode node)
+    {
+        if (node == null)
+        {
+            return false;
+        }
+        int opcode = node.getOpcode();
+        if (opcode >= ICONST_M1 && opcode <= ICONST_5)
+        {
+            return true;
+        }
+        if (opcode == BIPUSH || opcode == SIPUSH)
+        {
+            return true;
+        }
+        return opcode == LDC && ((LdcInsnNode) node).cst instanceof Integer;
     }
 }

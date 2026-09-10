@@ -91,7 +91,7 @@ public abstract class IvClassTransformer {
         try {
             classNode = new ClassNode();
             ClassReader classReader = new ClassReader(data);
-            classReader.accept(classNode, 0);
+            classReader.accept(classNode, ClassReader.EXPAND_FRAMES);
         } catch (Exception ex) {
             logger.error("Error patching class PRE " + actualClassName + " (" + srgClassName + ")!", ex);
             return data;
@@ -106,9 +106,11 @@ public abstract class IvClassTransformer {
 
         if (didChange) {
             try {
-                ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_MAXS);
-                // ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES); //
-                // Compute Frames can crash sometimes...
+                ClassWriter writer = new IvHierarchyClassWriter(
+                    ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES,
+                    classNode,
+                    actualClassName,
+                    srgClassName);
                 classNode.accept(writer);
                 return writer.toByteArray();
             } catch (Exception ex) {

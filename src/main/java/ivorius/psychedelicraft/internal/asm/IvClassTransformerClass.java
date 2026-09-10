@@ -59,16 +59,12 @@ public abstract class IvClassTransformerClass extends IvClassTransformer {
             if (!sigs[methodIndex]) {
                 String[] methodInfo = registeredMethods.get(methodIndex);
 
-                logger.error(
-                    "Could not transform expected method in class \"" + className
-                        + "\" (Obf: "
-                        + obf
-                        + "): "
-                        + methodInfo[0]
-                        + " - "
+                throw new IllegalStateException(
+                    "Required transformation failed: class=" + className
+                        + ", method=" + methodInfo[0]
                         + methodInfo[1]
-                        + " - "
-                        + methodInfo[2]);
+                        + ", hook=" + methodInfo[2]
+                        + ", obfuscated=" + obf);
             } else {
                 didChange = true;
             }
