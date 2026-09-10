@@ -5,7 +5,7 @@
 
 package ivorius.psychedelicraft.entities;
 
-import ivorius.ivtoolkit.math.IvMathHelper;
+import ivorius.psychedelicraft.internal.math.IvMathHelper;
 import ivorius.psychedelicraft.blocks.PSBlocks;
 import ivorius.psychedelicraft.entities.drugs.DrugProperties;
 import net.minecraft.block.Block;

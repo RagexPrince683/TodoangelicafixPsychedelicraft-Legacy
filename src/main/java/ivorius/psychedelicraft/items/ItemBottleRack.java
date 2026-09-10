@@ -1,6 +1,6 @@
 package ivorius.psychedelicraft.items;
 
-import ivorius.ivtoolkit.blocks.IvMultiBlockHelper;
+import ivorius.psychedelicraft.internal.blocks.IvMultiBlockHelper;
 import ivorius.psychedelicraft.blocks.PSBlocks;
 import ivorius.psychedelicraft.blocks.TileEntityBottleRack;
 import net.minecraft.block.Block;

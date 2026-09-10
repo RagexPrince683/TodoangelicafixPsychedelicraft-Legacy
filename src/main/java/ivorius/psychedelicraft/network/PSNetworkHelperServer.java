@@ -6,7 +6,7 @@
 package ivorius.psychedelicraft.network;
 
 import cpw.mods.fml.common.network.simpleimpl.SimpleNetworkWrapper;
-import ivorius.ivtoolkit.network.PacketExtendedEntityPropertiesData;
+import ivorius.psychedelicraft.internal.network.PacketExtendedEntityPropertiesData;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;

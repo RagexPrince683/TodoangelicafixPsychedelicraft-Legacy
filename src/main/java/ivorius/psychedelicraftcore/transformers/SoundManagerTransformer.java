@@ -5,9 +5,9 @@
 
 package ivorius.psychedelicraftcore.transformers;
 
-import ivorius.ivtoolkit.asm.IvClassTransformerClass;
-import ivorius.ivtoolkit.asm.IvNodeFinder;
-import ivorius.ivtoolkit.asm.IvNodeMatcherSimple;
+import ivorius.psychedelicraft.internal.asm.IvClassTransformerClass;
+import ivorius.psychedelicraft.internal.asm.IvNodeFinder;
+import ivorius.psychedelicraft.internal.asm.IvNodeMatcherSimple;
 import org.apache.logging.log4j.Logger;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.*;

@@ -1,6 +1,6 @@
 package ivorius.psychedelicraft.blocks;
 
-import ivorius.ivtoolkit.blocks.IvMultiBlockHelper;
+import ivorius.psychedelicraft.internal.blocks.IvMultiBlockHelper;
 import net.minecraft.block.Block;
 import net.minecraft.block.material.Material;
 import net.minecraft.client.renderer.texture.IIconRegister;

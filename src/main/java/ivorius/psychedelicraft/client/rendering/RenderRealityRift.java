@@ -5,7 +5,7 @@
 
 package ivorius.psychedelicraft.client.rendering;
 
-import ivorius.ivtoolkit.rendering.IvRenderHelper;
+import ivorius.psychedelicraft.internal.rendering.IvRenderHelper;
 import ivorius.psychedelicraft.Psychedelicraft;
 import ivorius.psychedelicraft.client.rendering.shaders.PSRenderStates;
 import ivorius.psychedelicraft.entities.EntityRealityRift;

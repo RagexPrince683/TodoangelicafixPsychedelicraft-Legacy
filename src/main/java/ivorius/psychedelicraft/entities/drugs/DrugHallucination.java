@@ -5,7 +5,7 @@
 
 package ivorius.psychedelicraft.entities.drugs;
 
-import ivorius.ivtoolkit.logic.IvChatBot;
+import ivorius.psychedelicraft.internal.logic.IvChatBot;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.ChatComponentText;

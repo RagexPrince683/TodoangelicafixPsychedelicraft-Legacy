@@ -5,8 +5,8 @@
 
 package ivorius.psychedelicraft.client.rendering;
 
-import ivorius.ivtoolkit.math.IvMathHelper;
-import ivorius.ivtoolkit.rendering.IvOpenGLHelper;
+import ivorius.psychedelicraft.internal.math.IvMathHelper;
+import ivorius.psychedelicraft.internal.rendering.IvOpenGLHelper;
 import ivorius.psychedelicraft.Psychedelicraft;
 import ivorius.psychedelicraft.client.rendering.shaders.PSRenderStates;
 import ivorius.psychedelicraft.entities.drugs.Drug;

@@ -1,7 +1,7 @@
 package ivorius.psychedelicraft.client.rendering.blocks;
 
-import ivorius.ivtoolkit.blocks.IvRotatableBlockRenderHelper;
-import ivorius.ivtoolkit.raytracing.IvRaytracer;
+import ivorius.psychedelicraft.internal.blocks.IvRotatableBlockRenderHelper;
+import ivorius.psychedelicraft.internal.raytracing.IvRaytracer;
 import ivorius.psychedelicraft.Psychedelicraft;
 import ivorius.psychedelicraft.blocks.TileEntityBottleRack;
 import ivorius.psychedelicraft.items.ItemBottle;

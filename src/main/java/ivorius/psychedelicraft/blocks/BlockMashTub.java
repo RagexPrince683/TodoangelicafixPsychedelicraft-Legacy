@@ -5,8 +5,8 @@
 
 package ivorius.psychedelicraft.blocks;
 
-import ivorius.ivtoolkit.blocks.IvBlockMultiblock;
-import ivorius.ivtoolkit.blocks.IvTileEntityMultiBlock;
+import ivorius.psychedelicraft.internal.blocks.IvBlockMultiblock;
+import ivorius.psychedelicraft.internal.blocks.IvTileEntityMultiBlock;
 import ivorius.psychedelicraft.PSMultiBlockHelper;
 import ivorius.psychedelicraft.Psychedelicraft;
 import ivorius.psychedelicraft.gui.PSGuiHandler;

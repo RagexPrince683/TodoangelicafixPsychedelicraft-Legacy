@@ -5,8 +5,8 @@
 
 package ivorius.psychedelicraft.client.rendering.shaders;
 
-import ivorius.ivtoolkit.rendering.IvDepthBuffer;
-import ivorius.ivtoolkit.rendering.IvShaderInstance3D;
+import ivorius.psychedelicraft.internal.rendering.IvDepthBuffer;
+import ivorius.psychedelicraft.internal.rendering.IvShaderInstance3D;
 import ivorius.psychedelicraft.client.rendering.GLStateProxy;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.OpenGlHelper;

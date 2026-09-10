@@ -5,7 +5,7 @@
 
 package ivorius.psychedelicraft.entities.drugs;
 
-import ivorius.ivtoolkit.math.IvMathHelper;
+import ivorius.psychedelicraft.internal.math.IvMathHelper;
 import net.minecraft.entity.Entity;
 
 import java.util.Random;

@@ -5,10 +5,10 @@
 
 package ivorius.psychedelicraft.client.rendering.shaders;
 
-import ivorius.ivtoolkit.math.IvMathHelper;
-import ivorius.ivtoolkit.rendering.IvDepthBuffer;
-import ivorius.ivtoolkit.rendering.IvOpenGLTexturePingPong;
-import ivorius.ivtoolkit.rendering.IvShaderInstance2D;
+import ivorius.psychedelicraft.internal.math.IvMathHelper;
+import ivorius.psychedelicraft.internal.rendering.IvDepthBuffer;
+import ivorius.psychedelicraft.internal.rendering.IvOpenGLTexturePingPong;
+import ivorius.psychedelicraft.internal.rendering.IvShaderInstance2D;
 import net.minecraft.client.renderer.OpenGlHelper;
 import net.minecraft.util.MathHelper;
 import org.apache.logging.log4j.Logger;

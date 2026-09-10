@@ -5,11 +5,11 @@
 
 package ivorius.psychedelicraft.client.rendering.blocks;
 
-import ivorius.ivtoolkit.bezier.IvBezierPath3D;
-import ivorius.ivtoolkit.bezier.IvBezierPath3DCreator;
-import ivorius.ivtoolkit.bezier.IvBezierPath3DRendererText;
-import ivorius.ivtoolkit.rendering.IvRenderHelper;
-import ivorius.ivtoolkit.tools.IvStringHelper;
+import ivorius.psychedelicraft.internal.bezier.IvBezierPath3D;
+import ivorius.psychedelicraft.internal.bezier.IvBezierPath3DCreator;
+import ivorius.psychedelicraft.internal.bezier.IvBezierPath3DRendererText;
+import ivorius.psychedelicraft.internal.rendering.IvRenderHelper;
+import ivorius.psychedelicraft.internal.tools.IvStringHelper;
 import ivorius.psychedelicraft.Psychedelicraft;
 import ivorius.psychedelicraft.blocks.TileEntityRiftJar;
 import ivorius.psychedelicraft.client.rendering.shaders.PSRenderStates;

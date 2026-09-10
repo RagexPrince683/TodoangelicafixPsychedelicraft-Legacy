@@ -10,7 +10,7 @@ import cpw.mods.fml.common.event.FMLPreInitializationEvent;
 import cpw.mods.fml.common.registry.EntityRegistry;
 import cpw.mods.fml.common.registry.GameRegistry;
 import cpw.mods.fml.common.registry.VillagerRegistry;
-import ivorius.ivtoolkit.gui.IntegerRange;
+import ivorius.psychedelicraft.internal.gui.IntegerRange;
 import ivorius.psychedelicraft.Psychedelicraft;
 import ivorius.psychedelicraft.blocks.*;
 import ivorius.psychedelicraft.config.PSConfig;

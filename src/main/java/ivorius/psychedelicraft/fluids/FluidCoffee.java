@@ -5,7 +5,7 @@
 
 package ivorius.psychedelicraft.fluids;
 
-import ivorius.ivtoolkit.math.IvMathHelper;
+import ivorius.psychedelicraft.internal.math.IvMathHelper;
 import ivorius.psychedelicraft.entities.drugs.DrugInfluence;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.MathHelper;

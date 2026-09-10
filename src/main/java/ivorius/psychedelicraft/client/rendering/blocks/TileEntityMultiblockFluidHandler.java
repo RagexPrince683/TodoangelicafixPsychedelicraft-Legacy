@@ -5,7 +5,7 @@
 
 package ivorius.psychedelicraft.client.rendering.blocks;
 
-import ivorius.ivtoolkit.blocks.IvTileEntityMultiBlock;
+import ivorius.psychedelicraft.internal.blocks.IvTileEntityMultiBlock;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraftforge.common.util.ForgeDirection;
 import net.minecraftforge.fluids.*;

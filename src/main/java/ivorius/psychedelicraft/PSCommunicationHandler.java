@@ -6,7 +6,7 @@
 package ivorius.psychedelicraft;
 
 import cpw.mods.fml.common.event.FMLInterModComms;
-import ivorius.ivtoolkit.tools.IvFMLIntercommHandler;
+import ivorius.psychedelicraft.internal.tools.IvFMLIntercommHandler;
 import ivorius.psychedelicraft.entities.drugs.Drug;
 import ivorius.psychedelicraft.entities.drugs.DrugProperties;
 import ivorius.psychedelicraft.entities.drugs.DrugInfluence;

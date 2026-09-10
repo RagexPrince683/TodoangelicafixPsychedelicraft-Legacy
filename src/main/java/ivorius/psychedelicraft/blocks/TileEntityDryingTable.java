@@ -6,10 +6,10 @@
 package ivorius.psychedelicraft.blocks;
 
 import io.netty.buffer.ByteBuf;
-import ivorius.ivtoolkit.blocks.IvTileEntityHelper;
-import ivorius.ivtoolkit.math.IvMathHelper;
-import ivorius.ivtoolkit.network.IvNetworkHelperServer;
-import ivorius.ivtoolkit.network.PartialUpdateHandler;
+import ivorius.psychedelicraft.internal.blocks.IvTileEntityHelper;
+import ivorius.psychedelicraft.internal.math.IvMathHelper;
+import ivorius.psychedelicraft.internal.network.IvNetworkHelperServer;
+import ivorius.psychedelicraft.internal.network.PartialUpdateHandler;
 import ivorius.psychedelicraft.Psychedelicraft;
 import ivorius.psychedelicraft.config.PSConfig;
 import ivorius.psychedelicraft.crafting.DryingRegistry;

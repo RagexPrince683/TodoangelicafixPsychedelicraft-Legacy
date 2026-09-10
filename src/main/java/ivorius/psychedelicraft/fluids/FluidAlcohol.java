@@ -2,7 +2,7 @@ package ivorius.psychedelicraft.fluids;
 
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
-import ivorius.ivtoolkit.gui.IntegerRange;
+import ivorius.psychedelicraft.internal.gui.IntegerRange;
 import ivorius.psychedelicraft.Psychedelicraft;
 import ivorius.psychedelicraft.client.rendering.MCColorHelper;
 import ivorius.psychedelicraft.entities.drugs.DrugInfluence;

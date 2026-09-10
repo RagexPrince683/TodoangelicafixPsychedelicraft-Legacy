@@ -1,9 +1,9 @@
 package ivorius.psychedelicraft.blocks;
 
-import ivorius.ivtoolkit.blocks.IvTileEntityRotatable;
-import ivorius.ivtoolkit.raytracing.IvRaytraceableObject;
-import ivorius.ivtoolkit.raytracing.IvRaytracedIntersection;
-import ivorius.ivtoolkit.raytracing.IvRaytracerMC;
+import ivorius.psychedelicraft.internal.blocks.IvTileEntityRotatable;
+import ivorius.psychedelicraft.internal.raytracing.IvRaytraceableObject;
+import ivorius.psychedelicraft.internal.raytracing.IvRaytracedIntersection;
+import ivorius.psychedelicraft.internal.raytracing.IvRaytracerMC;
 import ivorius.psychedelicraft.items.ItemBottle;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;

@@ -5,8 +5,8 @@
 
 package ivorius.psychedelicraft.items;
 
-import ivorius.ivtoolkit.blocks.IvMultiBlockHelper;
-import ivorius.ivtoolkit.blocks.IvTileEntityMultiBlock;
+import ivorius.psychedelicraft.internal.blocks.IvMultiBlockHelper;
+import ivorius.psychedelicraft.internal.blocks.IvTileEntityMultiBlock;
 import ivorius.psychedelicraft.blocks.TileEntityMashTub;
 import ivorius.psychedelicraft.fluids.FluidFermentable;
 import ivorius.psychedelicraft.fluids.FluidHelper;
