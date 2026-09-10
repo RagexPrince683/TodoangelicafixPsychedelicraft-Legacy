@@ -7,6 +7,7 @@ package ivorius.psychedelicraft.entities;
 
 import ivorius.psychedelicraft.internal.math.IvMathHelper;
 import ivorius.psychedelicraft.blocks.PSBlocks;
+import ivorius.psychedelicraft.config.PSConfig;
 import ivorius.psychedelicraft.entities.drugs.DrugProperties;
 import net.minecraft.block.Block;
 import net.minecraft.block.material.Material;
@@ -50,6 +51,12 @@ public class EntityRealityRift extends Entity
     public void onUpdate()
     {
         super.onUpdate();
+
+        if (!worldObj.isRemote && !PSConfig.enableRealityRifts)
+        {
+            setDead();
+            return;
+        }
 
         motionX = 0.0;
         motionY = 0.0;

@@ -33,6 +33,12 @@ tasks.register("copyMods", Copy) {
     mustRunAfter "deobfBinJar"
     mustRunAfter "repackMinecraft"
 }
+
+def clientDevMods = files(fileTree(dir: "devmods/client", include: ["*.jar"]))
+
+tasks.named("runClient").configure {
+    classpath += clientDevMods
+}
 //task copyMods(type: Copy, dependsOn: "extractUserDev") {
 //    from { configurations.provided }
 //    include "**/*.jar"

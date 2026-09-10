@@ -27,6 +27,7 @@ public class PSConfig
     private static final int MINUTE = 20 * 60;
 
     public static int randomTicksUntilRiftSpawn;
+    public static boolean enableRealityRifts;
     public static boolean enableHarmonium;
     public static boolean enableRiftJars;
 
@@ -76,7 +77,8 @@ public class PSConfig
 
         if (configID == null || configID.equals(CATEGORY_BALANCING))
         {
-            randomTicksUntilRiftSpawn = config.get(CATEGORY_BALANCING, "randomTicksUntilRiftSpawn", MINUTE * 180, "Approximate number of ticks until a rift spawns. Enter a negative number to disable.").getInt();
+            enableRealityRifts = config.getBoolean("enableRealityRifts", CATEGORY_BALANCING, true, "Whether reality rifts may exist or be spawned. Existing rifts are removed when disabled.");
+            randomTicksUntilRiftSpawn = config.getInt("randomTicksUntilRiftSpawn", CATEGORY_BALANCING, MINUTE * 180, -1, Integer.MAX_VALUE, "Approximate number of player ticks between random rift spawns. Enter zero or -1 to disable random spawning.");
 
             enableHarmonium = config.get(CATEGORY_BALANCING, "enableHarmonium", false).getBoolean();
             enableRiftJars = config.get(CATEGORY_BALANCING, "enableRiftJars", false).getBoolean();

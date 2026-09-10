@@ -1,3 +1,37 @@
+# Add devmods support and fix EntityRealityRift configuration and spawning
+
+## Changed
+
+* Added non-publishable local development-mod loading from `devmods/` for client
+  and dedicated-server runs, plus isolated `devmods/client/` loading for the
+  client run. Empty tracked directories remain valid and local JARs are ignored.
+* Added the balancing key `enableRealityRifts`, defaulting to `true`, and applied
+  it to random, command, rift-jar, and saved-entity paths without removing or
+  renaming entity registration.
+* Constrained `randomTicksUntilRiftSpawn` to the values accepted by its random
+  bound. Positive values preserve the existing default and spawn chance, while
+  `0` and `-1` disable random spawning.
+* Moved rift-jar release decisions fully onto the logical server and retained the
+  existing per-player, per-tick random spawn conditions.
+
+## Root cause
+
+* The only rift control was a random-spawn interval whose description treated a
+  negative value as a global disable even though the value was checked in only
+  one of three spawn paths. Commands and rift jars bypassed it, and saved rifts
+  never consulted configuration.
+* Rift-jar release mutated its stored fraction on both logical sides, even though
+  only its entity creation was server guarded. Local mod JARs had no isolated,
+  non-publishable runtime path.
+
+## Verification limits
+
+* Source, configuration flow, Gradle wiring, Git ignores, and diffs were reviewed
+  without compiling binaries, running automated tests, or launching Minecraft.
+* The original cubic random offset and per-player tick frequency have no clear
+  design documentation. Developer feedback is required before changing those
+  conditions.
+
 # Fix launch verification and runtime dependency discovery errors
 
 ## Fixed

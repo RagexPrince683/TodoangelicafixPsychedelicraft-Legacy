@@ -39,6 +39,11 @@ public class PSEventFMLHandler
 {
     public static void spawnRiftAtPlayer(EntityPlayer player)
     {
+        if (player.getEntityWorld().isRemote || !PSConfig.enableRealityRifts)
+        {
+            return;
+        }
+
         EntityRealityRift rift = new EntityRealityRift(player.getEntityWorld());
 
         double xP = (player.getRNG().nextDouble() - 0.5) * 100.0;
@@ -94,7 +99,9 @@ public class PSEventFMLHandler
             {
                 drugProperties.updateDrugEffects(event.player);
 
-                if (!event.player.getEntityWorld().isRemote && PSConfig.randomTicksUntilRiftSpawn > 0)
+                if (!event.player.getEntityWorld().isRemote
+                        && PSConfig.enableRealityRifts
+                        && PSConfig.randomTicksUntilRiftSpawn > 0)
                 {
                     if (event.player.getRNG().nextInt(PSConfig.randomTicksUntilRiftSpawn) == 0)
                     {

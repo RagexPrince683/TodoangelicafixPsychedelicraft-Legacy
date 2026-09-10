@@ -35,4 +35,8 @@
  */
 dependencies {
     runtimeOnlyNonPublishable("com.github.GTNewHorizons:NotEnoughItems:2.7.4-GTNH:dev")
+
+    // Root-level devmods are shared by client and dedicated-server development runs.
+    // Keep client-only mods in devmods/client; addon.gradle adds those only to runClient.
+    runtimeOnlyNonPublishable fileTree(dir: "devmods", include: ["*.jar"])
 }
