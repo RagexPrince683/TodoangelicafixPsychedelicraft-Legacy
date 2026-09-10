@@ -1,6 +1,6 @@
 package ivorius.psychedelicraft.entities.drugs;
 
-import ivorius.ivtoolkit.math.IvMathHelper;
+import ivorius.psychedelicraft.internal.math.IvMathHelper;
 import ivorius.psychedelicraft.config.PSConfig;
 import net.minecraft.entity.EntityLivingBase;
 

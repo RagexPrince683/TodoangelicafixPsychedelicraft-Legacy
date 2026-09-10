@@ -5,7 +5,7 @@
 
 package ivorius.psychedelicraft.items;
 
-import ivorius.ivtoolkit.tools.IvInventoryHelper;
+import ivorius.psychedelicraft.internal.tools.IvInventoryHelper;
 import ivorius.psychedelicraft.entities.drugs.DrugProperties;
 import ivorius.psychedelicraft.entities.drugs.DrugInfluence;
 import net.minecraft.entity.player.EntityPlayer;

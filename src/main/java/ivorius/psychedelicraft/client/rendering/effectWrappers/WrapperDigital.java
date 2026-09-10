@@ -5,8 +5,8 @@
 
 package ivorius.psychedelicraft.client.rendering.effectWrappers;
 
-import ivorius.ivtoolkit.rendering.IvDepthBuffer;
-import ivorius.ivtoolkit.rendering.IvOpenGLTexturePingPong;
+import ivorius.psychedelicraft.internal.rendering.IvDepthBuffer;
+import ivorius.psychedelicraft.internal.rendering.IvOpenGLTexturePingPong;
 
 /**
  * Created by lukas on 26.04.14.

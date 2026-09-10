@@ -44,8 +44,8 @@ tasks.register("copyMods", Copy) {
 //    mustRunAfter "repackMinecraft"
 //}
 
-sourceCompatibility = 1.7
-targetCompatibility = 1.7
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
 
 //task sourceJar(type: Jar) {
 //    from sourceSets.main.allSource

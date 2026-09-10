@@ -1,8 +1,8 @@
 package ivorius.psychedelicraftcore.transformers;
 
 import com.google.common.base.Predicate;
-import ivorius.ivtoolkit.asm.IvClassTransformer;
-import ivorius.ivtoolkit.asm.IvSingleNodeMatcher;
+import ivorius.psychedelicraft.internal.asm.IvClassTransformer;
+import ivorius.psychedelicraft.internal.asm.IvSingleNodeMatcher;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;

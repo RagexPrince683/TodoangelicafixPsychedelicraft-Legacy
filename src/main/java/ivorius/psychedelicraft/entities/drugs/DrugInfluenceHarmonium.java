@@ -5,7 +5,7 @@
 
 package ivorius.psychedelicraft.entities.drugs;
 
-import ivorius.ivtoolkit.math.IvMathHelper;
+import ivorius.psychedelicraft.internal.math.IvMathHelper;
 import ivorius.psychedelicraft.entities.drugs.effects.DrugHarmonium;
 import net.minecraft.nbt.NBTTagCompound;
 

@@ -5,7 +5,7 @@
 
 package ivorius.psychedelicraftcore.transformers;
 
-import ivorius.ivtoolkit.asm.IvClassTransformerClass;
+import ivorius.psychedelicraft.internal.asm.IvClassTransformerClass;
 import org.apache.logging.log4j.Logger;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.InsnList;

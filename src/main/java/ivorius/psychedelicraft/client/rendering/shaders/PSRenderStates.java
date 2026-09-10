@@ -6,7 +6,7 @@
 package ivorius.psychedelicraft.client.rendering.shaders;
 
 import com.google.common.base.Charsets;
-import ivorius.ivtoolkit.rendering.*;
+import ivorius.psychedelicraft.internal.rendering.*;
 import ivorius.psychedelicraft.Psychedelicraft;
 import ivorius.psychedelicraft.client.rendering.EntityFakeSun;
 import ivorius.psychedelicraft.client.rendering.GLStateProxy;

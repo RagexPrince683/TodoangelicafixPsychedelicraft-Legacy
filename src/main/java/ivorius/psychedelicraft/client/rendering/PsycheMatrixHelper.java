@@ -6,7 +6,7 @@
 package ivorius.psychedelicraft.client.rendering;
 
 import cpw.mods.fml.relauncher.ReflectionHelper;
-import ivorius.ivtoolkit.math.IvMatrixHelper;
+import ivorius.psychedelicraft.internal.math.IvMatrixHelper;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.EntityRenderer;
 import net.minecraft.entity.Entity;

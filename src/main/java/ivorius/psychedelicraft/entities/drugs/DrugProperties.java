@@ -7,7 +7,7 @@ package ivorius.psychedelicraft.entities.drugs;
 
 import cpw.mods.fml.common.network.ByteBufUtils;
 import io.netty.buffer.ByteBuf;
-import ivorius.ivtoolkit.network.PartialUpdateHandler;
+import ivorius.psychedelicraft.internal.network.PartialUpdateHandler;
 import ivorius.psychedelicraft.Psychedelicraft;
 import ivorius.psychedelicraft.client.rendering.IDrugRenderer;
 import ivorius.psychedelicraft.entities.PSAccessHelperEntity;

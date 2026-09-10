@@ -7,10 +7,10 @@ package ivorius.psychedelicraftcore.transformers;
 
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
-import ivorius.ivtoolkit.asm.IvClassTransformerGeneral;
-import ivorius.ivtoolkit.asm.IvInsnHelper;
-import ivorius.ivtoolkit.asm.IvNodeFinder;
-import ivorius.ivtoolkit.asm.IvNodeMatcherMethodSRG;
+import ivorius.psychedelicraft.internal.asm.IvClassTransformerGeneral;
+import ivorius.psychedelicraft.internal.asm.IvInsnHelper;
+import ivorius.psychedelicraft.internal.asm.IvNodeFinder;
+import ivorius.psychedelicraft.internal.asm.IvNodeMatcherMethodSRG;
 import ivorius.psychedelicraftcore.PsychedelicraftLoadingPlugin;
 import org.apache.logging.log4j.Logger;
 import org.objectweb.asm.Type;

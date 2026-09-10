@@ -8,7 +8,9 @@ package ivorius.psychedelicraft.client;
 import cpw.mods.fml.client.registry.ClientRegistry;
 import cpw.mods.fml.client.registry.RenderingRegistry;
 import cpw.mods.fml.common.registry.VillagerRegistry;
-import ivorius.ivtoolkit.rendering.IvParticleHelper;
+import cpw.mods.fml.common.FMLCommonHandler;
+import ivorius.psychedelicraft.internal.network.ClientPacketQueue;
+import ivorius.psychedelicraft.internal.rendering.IvParticleHelper;
 import ivorius.psychedelicraft.PSProxy;
 import ivorius.psychedelicraft.Psychedelicraft;
 import ivorius.psychedelicraft.blocks.*;
@@ -29,6 +31,9 @@ import ivorius.psychedelicraft.items.PSItems;
 import net.minecraft.client.particle.EntityFX;
 import net.minecraft.client.particle.EntitySmokeFX;
 import net.minecraft.client.renderer.entity.RenderSnowball;
+import net.minecraft.client.resources.IResourceManager;
+import net.minecraft.client.resources.IResourceManagerReloadListener;
+import net.minecraft.client.resources.IReloadableResourceManager;
 import net.minecraft.entity.Entity;
 import net.minecraft.item.Item;
 import net.minecraft.util.ResourceLocation;
@@ -53,6 +58,7 @@ public class ClientProxy implements PSProxy
     @Override
     public void preInit()
     {
+        FMLCommonHandler.instance().bus().register(new ClientPacketQueue());
         Psychedelicraft.coreHandlerClient = new PSCoreHandlerClient();
         Psychedelicraft.coreHandlerClient.register();
     }
@@ -92,6 +98,18 @@ public class ClientProxy implements PSProxy
             VillagerRegistry.instance().registerVillagerSkin(PSEntityList.villagerDealerProfessionID, new ResourceLocation(Psychedelicraft.MODID, Psychedelicraft.filePathTextures + "villagerDealer.png"));
 
         PSRenderStates.allocate();
+        IResourceManager resourceManager = net.minecraft.client.Minecraft.getMinecraft().getResourceManager();
+        if (resourceManager instanceof IReloadableResourceManager)
+        {
+            ((IReloadableResourceManager) resourceManager).registerReloadListener(new IResourceManagerReloadListener()
+            {
+                @Override
+                public void onResourceManagerReload(IResourceManager ignored)
+                {
+                    PSRenderStates.allocate();
+                }
+            });
+        }
         PSRenderStates.outputShaderInfo();
     }
 

@@ -1,6 +1,6 @@
 package ivorius.psychedelicraft.gui;
 
-import ivorius.ivtoolkit.math.IvMathHelper;
+import ivorius.psychedelicraft.internal.math.IvMathHelper;
 import ivorius.psychedelicraft.client.rendering.MCColorHelper;
 import ivorius.psychedelicraft.fluids.TranslucentFluid;
 import net.minecraft.client.gui.inventory.GuiContainer;

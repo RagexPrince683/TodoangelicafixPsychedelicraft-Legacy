@@ -5,7 +5,7 @@
 
 package ivorius.psychedelicraft.entities.drugs.effects;
 
-import ivorius.ivtoolkit.math.IvMathHelper;
+import ivorius.psychedelicraft.internal.math.IvMathHelper;
 import ivorius.psychedelicraft.Psychedelicraft;
 import net.minecraft.entity.player.EntityPlayer;
 

@@ -6,11 +6,11 @@
 package ivorius.psychedelicraft.blocks;
 
 import io.netty.buffer.ByteBuf;
-import ivorius.ivtoolkit.bezier.IvBezierPath3D;
-import ivorius.ivtoolkit.blocks.IvTileEntityHelper;
-import ivorius.ivtoolkit.math.IvMathHelper;
-import ivorius.ivtoolkit.network.IvNetworkHelperServer;
-import ivorius.ivtoolkit.network.PartialUpdateHandler;
+import ivorius.psychedelicraft.internal.bezier.IvBezierPath3D;
+import ivorius.psychedelicraft.internal.blocks.IvTileEntityHelper;
+import ivorius.psychedelicraft.internal.math.IvMathHelper;
+import ivorius.psychedelicraft.internal.network.IvNetworkHelperServer;
+import ivorius.psychedelicraft.internal.network.PartialUpdateHandler;
 import ivorius.psychedelicraft.Psychedelicraft;
 import ivorius.psychedelicraft.entities.EntityRealityRift;
 import ivorius.psychedelicraft.entities.drugs.DrugProperties;

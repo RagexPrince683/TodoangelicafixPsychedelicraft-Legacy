@@ -5,7 +5,7 @@
 
 package ivorius.psychedelicraft.blocks;
 
-import ivorius.ivtoolkit.blocks.IvTileEntityHelper;
+import ivorius.psychedelicraft.internal.blocks.IvTileEntityHelper;
 import ivorius.psychedelicraft.client.rendering.blocks.TileEntityMultiblockFluidHandler;
 import ivorius.psychedelicraft.fluids.FluidFermentable;
 import net.minecraft.item.ItemStack;

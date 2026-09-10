@@ -5,7 +5,7 @@
 
 package ivorius.psychedelicraft.blocks;
 
-import ivorius.ivtoolkit.blocks.IvTileEntityHelper;
+import ivorius.psychedelicraft.internal.blocks.IvTileEntityHelper;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.network.NetworkManager;
 import net.minecraft.network.Packet;
