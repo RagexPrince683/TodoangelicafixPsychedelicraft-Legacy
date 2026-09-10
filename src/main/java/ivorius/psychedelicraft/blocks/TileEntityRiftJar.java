@@ -13,6 +13,7 @@ import ivorius.psychedelicraft.internal.network.IvNetworkHelperServer;
 import ivorius.psychedelicraft.internal.network.PartialUpdateHandler;
 import ivorius.psychedelicraft.Psychedelicraft;
 import ivorius.psychedelicraft.entities.EntityRealityRift;
+import ivorius.psychedelicraft.config.PSConfig;
 import ivorius.psychedelicraft.entities.drugs.DrugProperties;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.init.Blocks;
@@ -216,6 +217,11 @@ public class TileEntityRiftJar extends TileEntity implements PartialUpdateHandle
 
     public void releaseRift()
     {
+        if (worldObj.isRemote)
+        {
+            return;
+        }
+
         if (currentRiftFraction > 0.0f)
         {
             List<EntityRealityRift> rifts = getAffectedRifts();
@@ -226,7 +232,7 @@ public class TileEntityRiftJar extends TileEntity implements PartialUpdateHandle
             }
             else
             {
-                if (!worldObj.isRemote)
+                if (PSConfig.enableRealityRifts)
                 {
                     EntityRealityRift rift = new EntityRealityRift(worldObj);
                     rift.setPosition(xCoord + 0.5f, yCoord + 3.0f, zCoord + 0.5f);

@@ -4,3 +4,5 @@
 .idea/workspace.xml
 /run
 /run
+/devmods/*.jar
+/devmods/client/*.jar

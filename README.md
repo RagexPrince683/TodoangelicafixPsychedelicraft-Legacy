@@ -34,3 +34,36 @@ build tooling. Produced classes remain Java 8 compatible.
 
 * `./gradlew setupDecompWorkspace`
 * `./gradlew build`
+
+## Local development mods
+
+Place development-only mod JARs that work on both physical sides directly in
+`devmods/`. They are added through the non-publishable runtime configuration and
+are loaded by both `runClient` and `runServer`. Place client-only JARs in
+`devmods/client/`; only `runClient` receives that directory. Never place a
+client-only mod directly in `devmods/`, because doing so also exposes it to the
+dedicated-server run.
+
+Both directories may be empty. Local JARs are ignored by Git, are not copied into
+the Psychedelicraft artifact, and are not included in published dependency
+metadata. Use one directory per JAR: putting the same mod in both locations can
+still cause Forge to discover duplicate mods during a client run.
+
+## Reality rift configuration
+
+Reality rifts use the following keys in the `balancing` category:
+
+* `enableRealityRifts` defaults to `true`. When `false`, random, command, and rift
+  jar spawn paths are blocked. Saved rifts remain registered and loadable, but
+  remove themselves on their next logical-server update.
+* `randomTicksUntilRiftSpawn` retains its default of `216000` ticks and accepts
+  values from `-1` through `2147483647`. Positive values are passed to the random
+  player-tick check as its bound; `0` and `-1` disable only random spawning.
+
+When enabled, the existing random behavior is preserved: at the end of a logical
+server player tick, the configured chance is evaluated and a successful check
+places a rift at independently randomized offsets of less than 50 blocks on each
+axis. The historical code does not document whether the resulting cubic offset
+or the per-player tick frequency was intentional, so this change does not invent
+distance, dimension, terrain, or population rules. Developer feedback is still
+needed if those spawn conditions should be narrower.

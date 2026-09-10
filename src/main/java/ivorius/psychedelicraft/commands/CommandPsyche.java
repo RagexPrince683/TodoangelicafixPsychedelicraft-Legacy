@@ -5,6 +5,7 @@
 
 package ivorius.psychedelicraft.commands;
 
+import ivorius.psychedelicraft.config.PSConfig;
 import ivorius.psychedelicraft.entities.EntityRealityRift;
 import net.minecraft.command.CommandBase;
 import net.minecraft.command.ICommandSender;
@@ -37,6 +38,11 @@ public class CommandPsyche extends CommandBase
         {
             if ("spawnRift".equals(args[0]))
             {
+                if (commandSender.getEntityWorld().isRemote || !PSConfig.enableRealityRifts)
+                {
+                    return;
+                }
+
                 double x = (double)commandSender.getPlayerCoordinates().posX + 0.5D;
                 double y = (double)commandSender.getPlayerCoordinates().posY;
                 double z = (double)commandSender.getPlayerCoordinates().posZ + 0.5D;
