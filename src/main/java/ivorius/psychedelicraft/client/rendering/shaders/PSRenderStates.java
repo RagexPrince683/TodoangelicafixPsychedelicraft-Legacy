@@ -58,6 +58,22 @@ public class PSRenderStates
 
     public static boolean renderFakeSkybox = true;
 
+    private static boolean glLightEnabled;
+    private static boolean glLight0Valid;
+    private static float glLight0X;
+    private static float glLight0Y;
+    private static float glLight0Z;
+    private static float glLight0Strength;
+    private static float glLight0Specular;
+    private static boolean glLight1Valid;
+    private static float glLight1X;
+    private static float glLight1Y;
+    private static float glLight1Z;
+    private static float glLight1Strength;
+    private static float glLight1Specular;
+    private static boolean glLightAmbientValid;
+    private static float glLightAmbient;
+
     public static void preRender(float ticks)
     {
         didDepthPass = false;
@@ -280,6 +296,7 @@ public class PSRenderStates
             if (shader.activate(partialTicks, ticks))
             {
                 currentShader = shader;
+                applyLogicalLightingState(shader);
                 return true;
             }
         }
@@ -358,20 +375,56 @@ public class PSRenderStates
 
     public static void setGLLightEnabled(boolean enabled)
     {
+        glLightEnabled = enabled;
         if (currentShader != null)
             currentShader.setGLLightEnabled(enabled);
     }
 
     public static void setGLLight(int number, float x, float y, float z, float strength, float specular)
     {
+        if (number == 0)
+        {
+            glLight0Valid = true;
+            glLight0X = x;
+            glLight0Y = y;
+            glLight0Z = z;
+            glLight0Strength = strength;
+            glLight0Specular = specular;
+        }
+        else if (number == 1)
+        {
+            glLight1Valid = true;
+            glLight1X = x;
+            glLight1Y = y;
+            glLight1Z = z;
+            glLight1Strength = strength;
+            glLight1Specular = specular;
+        }
+
         if (currentShader != null)
             currentShader.setGLLight(number, x, y, z, strength, specular);
     }
 
     public static void setGLLightAmbient(float strength)
     {
+        glLightAmbientValid = true;
+        glLightAmbient = strength;
         if (currentShader != null)
             currentShader.setGLLightAmbient(strength);
+    }
+
+    private static void applyLogicalLightingState(ShaderWorld shader)
+    {
+        shader.setGLLightEnabled(glLightEnabled);
+
+        if (glLight0Valid)
+            shader.setGLLight(0, glLight0X, glLight0Y, glLight0Z, glLight0Strength, glLight0Specular);
+
+        if (glLight1Valid)
+            shader.setGLLight(1, glLight1X, glLight1Y, glLight1Z, glLight1Strength, glLight1Specular);
+
+        if (glLightAmbientValid)
+            shader.setGLLightAmbient(glLightAmbient);
     }
 
     public static void setFogMode(int mode)

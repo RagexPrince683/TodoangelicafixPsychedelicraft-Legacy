@@ -1,3 +1,24 @@
+# Remove normal ItemLightingEvent rendering allocations
+
+## Item lighting path
+
+- The normal injected `RenderHelper` hooks now call a primitive client callback rather than constructing and posting `ItemLightingEvent`. The reported 35,137 objects (1,124,384 bytes) establish allocation pressure, but do not establish retained-memory leakage.
+- The normalized vanilla light directions are initialized once. The callback retains the original two directions, 0.4 ambient strength, 0.6 diffuse strength, 0.0 specular strength, and enable/update ordering.
+- Logical item-lighting state is retained even when no Psychedelicraft shader is active and is applied when each shader becomes active. Minecraft's own `RenderHelper` calls remain untouched and no Psychedelicraft program is bound just for a notification.
+- `ShaderMain` now skips uploads when the enabled flag, either standard light position/strength pair, or ambient strength already matches that program's successfully uploaded value. Fixed uniform names remove string construction for standard light indices. Cache validity is cleared when its program is deleted, replaced, or relinked, including resource reload recreation.
+
+## Event compatibility
+
+- `ItemLightingEvent`, its public constructor, and the subscribed `standardItemLighting` adapter remain available. `postItemLightingEvent(boolean)` is the explicit allocation-producing compatibility dispatch.
+- Normal internal hooks no longer automatically notify external `ItemLightingEvent` listeners. Internal operations use either the primitive path or an explicitly requested event dispatch, never both.
+- The completed primitive `GLSwitchEvent` path and its explicit compatibility dispatcher are unchanged.
+
+## Verification limits and follow-up work
+
+- Source call paths, shader activation, program deletion/recreation, fixed-argument uniform overloads, and the transformer method names/descriptors were reviewed. Per project instruction, no binary compilation or runtime launch was performed.
+- Runtime profiling, gameplay coverage, Angelica integration, memory impact, and frame-rate impact remain unmeasured and require developer feedback.
+- Separate confirmed allocation sites remain in the normal rendering hooks for `GLTranslateEvent`, `GLRotateEvent`, `GLScaleEvent`, and other rendering events, and `ShaderMain.activate` still creates its two color arrays. They are intentionally outside this item-lighting change.
+
 # Reduce Psychedelicraft rendering allocation and resource lifetime overhead
 
 ## Confirmed causes fixed
