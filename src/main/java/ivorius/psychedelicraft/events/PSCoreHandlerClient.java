@@ -54,8 +54,23 @@ public class PSCoreHandlerClient
         return mask & PSRenderStates.getCurrentAllowedGLDataMask();
     }
     // Taken from RenderHelper
-    private final Vec3 primaryLightDirection = Vec3.createVectorHelper(0.20000000298023224D, 1.0D, -0.699999988079071D).normalize();
-    private final Vec3 secondaryLightDirection = Vec3.createVectorHelper(-0.20000000298023224D, 1.0D, 0.699999988079071D).normalize();
+    private static final Vec3 PRIMARY_LIGHT_DIRECTION = Vec3.createVectorHelper(0.20000000298023224D, 1.0D, -0.699999988079071D).normalize();
+    private static final Vec3 SECONDARY_LIGHT_DIRECTION = Vec3.createVectorHelper(-0.20000000298023224D, 1.0D, 0.699999988079071D).normalize();
+
+    public static void onStandardItemLighting(boolean enabled)
+    {
+        if (enabled)
+        {
+            PSRenderStates.setGLLightEnabled(true);
+            PSRenderStates.setGLLight(0, (float) PRIMARY_LIGHT_DIRECTION.xCoord, (float) PRIMARY_LIGHT_DIRECTION.yCoord, (float) PRIMARY_LIGHT_DIRECTION.zCoord, 0.6F, 0.0F);
+            PSRenderStates.setGLLight(1, (float) SECONDARY_LIGHT_DIRECTION.xCoord, (float) SECONDARY_LIGHT_DIRECTION.yCoord, (float) SECONDARY_LIGHT_DIRECTION.zCoord, 0.6F, 0.0F);
+            PSRenderStates.setGLLightAmbient(0.4F);
+        }
+        else
+        {
+            PSRenderStates.setGLLightEnabled(false);
+        }
+    }
 
     public void register()
     {
@@ -138,21 +153,7 @@ public class PSCoreHandlerClient
     @SubscribeEvent
     public void standardItemLighting(ItemLightingEvent event)
     {
-        if (event.enable)
-        {
-            float var0 = 0.4F;
-            float var1 = 0.6F;
-            float var2 = 0.0F;
-
-            PSRenderStates.setGLLightEnabled(true);
-            PSRenderStates.setGLLight(0, (float) primaryLightDirection.xCoord, (float) primaryLightDirection.yCoord, (float) primaryLightDirection.zCoord, var1, var2);
-            PSRenderStates.setGLLight(1, (float) secondaryLightDirection.xCoord, (float) secondaryLightDirection.yCoord, (float) secondaryLightDirection.zCoord, var1, var2);
-            PSRenderStates.setGLLightAmbient(var0);
-        }
-        else
-        {
-            PSRenderStates.setGLLightEnabled(false);
-        }
+        onStandardItemLighting(event.enable);
     }
 
     @SubscribeEvent

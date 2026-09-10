@@ -103,12 +103,22 @@ public class PsycheCoreBusClient
 
     public static void enableStandardItemLighting()
     {
-        PsycheCoreBusCommon.EVENT_BUS.post(new ItemLightingEvent(true));
+        PSCoreHandlerClient.onStandardItemLighting(true);
     }
 
     public static void disableStandardItemLighting()
     {
-        PsycheCoreBusCommon.EVENT_BUS.post(new ItemLightingEvent(false));
+        PSCoreHandlerClient.onStandardItemLighting(false);
+    }
+
+    /**
+     * Explicit compatibility dispatch for integrations which consume the public Forge event.
+     * Normal internal RenderHelper hooks call the allocation-free callback instead and do not
+     * automatically notify ItemLightingEvent listeners.
+     */
+    public static void postItemLightingEvent(boolean enabled)
+    {
+        PsycheCoreBusCommon.EVENT_BUS.post(new ItemLightingEvent(enabled));
     }
 
     public static void orientCamera(float partialTicks)

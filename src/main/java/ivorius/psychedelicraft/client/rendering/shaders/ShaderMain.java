@@ -28,11 +28,37 @@ import static org.lwjgl.opengl.GL11.GL_FOG;
  */
 public class ShaderMain extends IvShaderInstance3D implements ShaderWorld
 {
+    private static final String GL_LIGHT_ENABLED = "glLightEnabled";
+    private static final String GL_LIGHT_POS_0 = "glLightPos0";
+    private static final String GL_LIGHT_POS_1 = "glLightPos1";
+    private static final String GL_LIGHT_STRENGTH_0 = "glLightStrength0";
+    private static final String GL_LIGHT_STRENGTH_1 = "glLightStrength1";
+    private static final String GL_LIGHT_AMBIENT = "glLightAmbient";
+
     public boolean shouldDoShadows;
     public int shadowDepthTextureIndex;
 
     private boolean colorSafeModeIsEnabled;
     private boolean colorSafeModeIsForceEnabled;
+
+    private boolean glLightEnabledValid;
+    private boolean uploadedGLLightEnabled;
+    private boolean glLightPosition0Valid;
+    private float uploadedGLLight0X;
+    private float uploadedGLLight0Y;
+    private float uploadedGLLight0Z;
+    private boolean glLightStrength0Valid;
+    private float uploadedGLLight0Strength;
+    private float uploadedGLLight0Specular;
+    private boolean glLightPosition1Valid;
+    private float uploadedGLLight1X;
+    private float uploadedGLLight1Y;
+    private float uploadedGLLight1Z;
+    private boolean glLightStrength1Valid;
+    private float uploadedGLLight1Strength;
+    private float uploadedGLLight1Specular;
+    private boolean glLightAmbientValid;
+    private float uploadedGLLightAmbient;
 
     public ShaderMain(Logger logger)
     {
@@ -178,12 +204,70 @@ public class ShaderMain extends IvShaderInstance3D implements ShaderWorld
     @Override
     public void setGLLightEnabled(boolean enabled)
     {
-        setUniformInts("glLightEnabled", enabled ? 1 : 0);
+        if (glLightEnabledValid && uploadedGLLightEnabled == enabled)
+            return;
+
+        if (setUniformInts(GL_LIGHT_ENABLED, enabled ? 1 : 0))
+        {
+            uploadedGLLightEnabled = enabled;
+            glLightEnabledValid = true;
+        }
     }
 
     @Override
     public void setGLLight(int number, float x, float y, float z, float strength, float specular)
     {
+        if (number == 0)
+        {
+            if (!glLightPosition0Valid || uploadedGLLight0X != x || uploadedGLLight0Y != y || uploadedGLLight0Z != z)
+            {
+                if (setUniformFloats(GL_LIGHT_POS_0, x, y, z))
+                {
+                    uploadedGLLight0X = x;
+                    uploadedGLLight0Y = y;
+                    uploadedGLLight0Z = z;
+                    glLightPosition0Valid = true;
+                }
+            }
+
+            if (!glLightStrength0Valid || uploadedGLLight0Strength != strength || uploadedGLLight0Specular != specular)
+            {
+                if (setUniformFloats(GL_LIGHT_STRENGTH_0, strength, specular))
+                {
+                    uploadedGLLight0Strength = strength;
+                    uploadedGLLight0Specular = specular;
+                    glLightStrength0Valid = true;
+                }
+            }
+
+            return;
+        }
+        else if (number == 1)
+        {
+            if (!glLightPosition1Valid || uploadedGLLight1X != x || uploadedGLLight1Y != y || uploadedGLLight1Z != z)
+            {
+                if (setUniformFloats(GL_LIGHT_POS_1, x, y, z))
+                {
+                    uploadedGLLight1X = x;
+                    uploadedGLLight1Y = y;
+                    uploadedGLLight1Z = z;
+                    glLightPosition1Valid = true;
+                }
+            }
+
+            if (!glLightStrength1Valid || uploadedGLLight1Strength != strength || uploadedGLLight1Specular != specular)
+            {
+                if (setUniformFloats(GL_LIGHT_STRENGTH_1, strength, specular))
+                {
+                    uploadedGLLight1Strength = strength;
+                    uploadedGLLight1Specular = specular;
+                    glLightStrength1Valid = true;
+                }
+            }
+
+            return;
+        }
+
         setUniformFloats("glLightPos" + number, x, y, z);
         setUniformFloats("glLightStrength" + number, strength, specular);
     }
@@ -191,7 +275,31 @@ public class ShaderMain extends IvShaderInstance3D implements ShaderWorld
     @Override
     public void setGLLightAmbient(float strength)
     {
-        setUniformFloats("glLightAmbient", strength);
+        if (glLightAmbientValid && uploadedGLLightAmbient == strength)
+            return;
+
+        if (setUniformFloats(GL_LIGHT_AMBIENT, strength))
+        {
+            uploadedGLLightAmbient = strength;
+            glLightAmbientValid = true;
+        }
+    }
+
+    @Override
+    public void deleteShader()
+    {
+        invalidateLightingUniformCache();
+        super.deleteShader();
+    }
+
+    private void invalidateLightingUniformCache()
+    {
+        glLightEnabledValid = false;
+        glLightPosition0Valid = false;
+        glLightPosition1Valid = false;
+        glLightStrength0Valid = false;
+        glLightStrength1Valid = false;
+        glLightAmbientValid = false;
     }
 
     @Override
