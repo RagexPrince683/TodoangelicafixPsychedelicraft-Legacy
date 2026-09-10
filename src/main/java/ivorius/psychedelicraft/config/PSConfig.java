@@ -77,7 +77,7 @@ public class PSConfig
 
         if (configID == null || configID.equals(CATEGORY_BALANCING))
         {
-            enableRealityRifts = config.getBoolean("enableRealityRifts", CATEGORY_BALANCING, true, "Whether reality rifts may exist or be spawned. Existing rifts are removed when disabled.");
+            enableRealityRifts = config.getBoolean("enableRealityRifts", CATEGORY_BALANCING, false, "Whether reality rifts may exist or be spawned. Existing rifts are removed when disabled.");
             randomTicksUntilRiftSpawn = config.getInt("randomTicksUntilRiftSpawn", CATEGORY_BALANCING, MINUTE * 180, -1, Integer.MAX_VALUE, "Approximate number of player ticks between random rift spawns. Enter zero or -1 to disable random spawning.");
 
             enableHarmonium = config.get(CATEGORY_BALANCING, "enableHarmonium", false).getBoolean();
