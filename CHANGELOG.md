@@ -159,3 +159,31 @@
 
 None known. Runtime gameplay and graphics behavior were not exercised as part of
 this source-only migration.
+
+# Add optional NEI acquisition and processing support
+
+## Added
+
+* Added an optional, discovery-loaded NEI client integration with cached Drying,
+  Drink Preparation, and Acquisition categories.
+* Added live-registry drying displays for all supported ingredient forms, nine
+  occupied input slots, preserved output counts, both machine catalysts, base
+  times, and environmental behavior.
+* Added non-recipe acquisition pages for the implemented crop, tree, mushroom,
+  peyote, villager, and loot paths, including cannabis buds and seeds.
+* Added accurate custom drink-filling displays that use copied fluid output data
+  instead of `RecipeFillDrink`'s placeholder recipe output.
+* Added `docs/nei-coverage.md` with coverage ownership, disabled content, and
+  remaining processing-display limitations.
+
+## Compatibility
+
+* NEI is compile-only and is not a required or published runtime dependency.
+* The existing NEI development runtime remains unchanged, and common/dedicated
+  server initialization does not reference NEI classes.
+
+## Verification
+
+* Source, localization, dependency configuration, and whitespace were inspected.
+* In accordance with repository instructions, no binary compilation or runtime
+  launch was attempted. Runtime behavior remains unverified.
