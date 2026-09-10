@@ -1,3 +1,18 @@
+# Fix chunk-watcher player type mismatch
+
+## Fixed
+
+* Replaced the invalid assignment of `WorldServer.playerEntities` to a
+  `List<EntityPlayerMP>` with explicit, type-safe player filtering.
+* Preserved chunk-watcher recipient filtering while ensuring only
+  `EntityPlayerMP` instances are passed to the server player manager.
+
+## Verification
+
+* The compilation error occurred before the Minecraft client could start.
+* This source-only change was inspected for type safety and recipient filtering;
+  runtime behavior was not exercised, and no binary compilation was attempted.
+
 # Remove IvToolkit dependency
 
 ## Changed
