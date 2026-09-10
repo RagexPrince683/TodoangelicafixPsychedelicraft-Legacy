@@ -1,13 +1,19 @@
-repositories {
-    mavenCentral()
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+
+    dependencies {
+        classpath("org.eclipse.jgit:org.eclipse.jgit:6.8.0.202311291450-r")
+    }
 }
 
 plugins {
     id("com.gtnewhorizons.gtnhconvention")
 }
 
-dependencies {
-    implementation("org.eclipse.jgit:org.eclipse.jgit:6.8.0.202311291450-r")
+repositories {
+    mavenCentral()
 }
 
 val NEXT_VERSION = "1.5.4"
