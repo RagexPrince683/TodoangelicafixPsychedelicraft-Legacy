@@ -79,6 +79,9 @@ public class DrugRenderer implements IDrugRenderer
     @Override
     public void update(DrugProperties drugProperties, EntityLivingBase entity)
     {
+        if (entity != Minecraft.getMinecraft().renderViewEntity)
+            return;
+
         if (DrugProperties.hurtOverlayEnabled)
         {
             experiencedHealth = IvMathHelper.nearValue(experiencedHealth, entity.getHealth(), 0.01f, 0.01f);

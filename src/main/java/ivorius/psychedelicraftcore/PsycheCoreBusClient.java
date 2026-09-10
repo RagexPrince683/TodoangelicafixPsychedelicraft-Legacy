@@ -6,6 +6,7 @@
 package ivorius.psychedelicraftcore;
 
 import ivorius.pscoreutils.events.*;
+import ivorius.psychedelicraft.events.PSCoreHandlerClient;
 import net.minecraft.client.audio.ISound;
 import net.minecraft.client.audio.SoundCategory;
 import net.minecraft.client.audio.SoundManager;
@@ -29,27 +30,27 @@ public class PsycheCoreBusClient
 
     public static void psycheGLEnable(int cap)
     {
-        PsycheCoreBusCommon.EVENT_BUS.post(new GLSwitchEvent(cap, true));
+        PSCoreHandlerClient.onGLSwitch(cap, true);
     }
 
     public static void psycheGLDisable(int cap)
     {
-        PsycheCoreBusCommon.EVENT_BUS.post(new GLSwitchEvent(cap, false));
+        PSCoreHandlerClient.onGLSwitch(cap, false);
     }
 
     public static void psycheGLBlendFunc(int sFactor, int dFactor, int sfactorAlpha, int dfactorAlpha)
     {
-        PsycheCoreBusCommon.EVENT_BUS.post(new GLBlendFuncEvent(sFactor, dFactor, sfactorAlpha, dfactorAlpha));
+        PSCoreHandlerClient.onGLBlendFunc(sFactor, dFactor, sfactorAlpha, dfactorAlpha);
     }
 
     public static void psycheGLActiveTexture(int texture)
     {
-        PsycheCoreBusCommon.EVENT_BUS.post(new GLActiveTextureEvent(texture));
+        PSCoreHandlerClient.onGLActiveTexture(texture);
     }
 
     public static void psycheGLFogi(int pname, int param)
     {
-        PsycheCoreBusCommon.EVENT_BUS.post(new GLFogiEvent(pname, param));
+        PSCoreHandlerClient.onGLFogi(pname, param);
     }
 
     public static void psycheGLTranslatef(float x, float y, float z)
@@ -68,6 +69,32 @@ public class PsycheCoreBusClient
     }
 
     public static int psycheGLClear(int mask)
+    {
+        return PSCoreHandlerClient.onGLClear(mask);
+    }
+
+    /** Compatibility dispatch for integrations which consume the public Forge events. */
+    public static void postGLSwitchEvent(int cap, boolean enabled)
+    {
+        PsycheCoreBusCommon.EVENT_BUS.post(new GLSwitchEvent(cap, enabled));
+    }
+
+    public static void postGLBlendFuncEvent(int source, int destination, int sourceAlpha, int destinationAlpha)
+    {
+        PsycheCoreBusCommon.EVENT_BUS.post(new GLBlendFuncEvent(source, destination, sourceAlpha, destinationAlpha));
+    }
+
+    public static void postGLActiveTextureEvent(int texture)
+    {
+        PsycheCoreBusCommon.EVENT_BUS.post(new GLActiveTextureEvent(texture));
+    }
+
+    public static void postGLFogiEvent(int parameter, int value)
+    {
+        PsycheCoreBusCommon.EVENT_BUS.post(new GLFogiEvent(parameter, value));
+    }
+
+    public static int postGLClearEvent(int mask)
     {
         GLClearEvent event = new GLClearEvent(mask);
         PsycheCoreBusCommon.EVENT_BUS.post(event);

@@ -64,7 +64,7 @@ public class EffectMotionBlur implements Iv2DScreenEffect
                 motionBlurCacheTextureIndex %= motionBlurCacheTextures.length;
 
                 glBindTexture(GL_TEXTURE_2D, motionBlurCacheTextures[motionBlurCacheTextureIndex]);
-                glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 0, 0, screenWidth, screenHeight, 0);
+                glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, screenWidth, screenHeight);
                 motionBlurCacheTexturesInitialized[motionBlurCacheTextureIndex] = true;
 
                 previousTicks += sampleFrequency;
@@ -148,7 +148,10 @@ public class EffectMotionBlur implements Iv2DScreenEffect
         }
 
         motionBlurCacheTextureIndex = 0;
+        previousTicks = 0.0f;
         currentTexturesWidth = -1;
         currentTexturesHeight = -1;
+        motionBlurCacheTextures = null;
+        motionBlurCacheTexturesInitialized = null;
     }
 }

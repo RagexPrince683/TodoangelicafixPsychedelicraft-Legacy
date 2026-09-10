@@ -147,7 +147,7 @@ public class IvOpenGLTexturePingPong {
                 activeBuffer = 0;
                 bindCurrentTexture();
 
-                glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 0, 0, screenWidth, screenHeight, 0);
+                glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, screenWidth, screenHeight);
 
                 OpenGlHelper.func_153171_g(OpenGlHelper.field_153198_e, pingPongFB);
                 glPushAttrib(GL_VIEWPORT_BIT | GL_COLOR_BUFFER_BIT);
@@ -168,7 +168,7 @@ public class IvOpenGLTexturePingPong {
         } else // Use direct draw workaround
         {
             glBindTexture(GL_TEXTURE_2D, cacheTextures[0]);
-            glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 0, 0, screenWidth, screenHeight, 0);
+            glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, screenWidth, screenHeight);
         }
     }
 
@@ -206,5 +206,7 @@ public class IvOpenGLTexturePingPong {
 
         setupRealtimeFB = false;
         setup = false;
+        setupCacheTextureForTick = false;
+        activeBuffer = 0;
     }
 }

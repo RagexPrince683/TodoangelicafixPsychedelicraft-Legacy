@@ -1,3 +1,23 @@
+# Reduce Psychedelicraft rendering allocation and resource lifetime overhead
+
+## Confirmed causes fixed
+
+- `PsycheCoreBusClient.psycheGLEnable`, `psycheGLDisable`, blend, active-texture, fog, and clear hooks allocated a Forge event for every injected GL call. The injected internal path now invokes primitive callbacks in `PSCoreHandlerClient`; public event types and an explicit compatibility event dispatch remain available, without delivering twice to Psychedelicraft's handler.
+- `IvShaderInstance.setUniformIntsOfType`, `setUniformFloatsOfType`, and `setUniformMatrix` created direct NIO buffers for every upload. Uploads now use render-thread-local, fixed-capacity scratch buffers, correctly clear/limit/flip each upload, and common one-to-four argument overloads avoid varargs arrays at hot call sites. Larger legacy array uploads retain their compatible fallback.
+- `ScreenEffectWrapper.dealloc` did not destroy its owned effect, leaving `EffectMotionBlur`'s 30 texture objects alive across reloads. Wrapper cleanup now reaches `destruct`, and motion-blur cleanup is repeatable and clears IDs, arrays, dimensions, indices, and timing state.
+- Motion blur and ping-pong captures redefined texture storage on every sample. Their already-sized textures now use `glCopyTexSubImage2D`; storage is still recreated when display dimensions change, preserving history size and sampling semantics.
+- Shader resource streams were not closed, and compile/link/validation failure paths could retain shader/program objects. Streams now close and failed GL objects are deleted.
+- `DrugRenderer.update` performed the same camera-only lens-flare ray traces for every client living entity. Camera visual updates are now scoped to Minecraft's current render-view entity; per-entity drug state remains separate.
+- `DrugProperties.changeDrugModifier` removed and recreated an identical modifier every update. It now keeps an equal UUID/amount/operation modifier and correctly uses the requested attribute.
+- Disabled 2D shaders no longer enter framebuffer/post-processing setup.
+- Shader activation records and restores the caller's current program rather than assuming program zero, avoiding desynchronization with rendering state caches such as Angelica's.
+
+## Compatibility and limits
+
+- Forge 1.7.10, Java 8, LWJGL 2, existing registry/NBT/network data, IvToolkit independence, development-mod support, and reality-rift behavior are unchanged.
+- No Angelica binary or source is present in this checkout. Changes therefore use only Minecraft/LWJGL state entry points already used by the mod and do not invent or link Angelica APIs. Runtime interaction with a particular Angelica build remains unverified.
+- The supplied histogram establishes allocation churn, not by itself a retained leak. The empty wrapper cleanup is a confirmed Psychedelicraft GPU-resource leak; NEI populations, unrelated stream populations, Angelica-owned state/native buffers, and GPU-driver retention remain untraced suspects and are not attributed to Psychedelicraft.
+- Runtime memory and frame-rate results are unverified; no measured improvement is claimed.
 # Add devmods support and fix EntityRealityRift configuration and spawning
 
 ## Changed

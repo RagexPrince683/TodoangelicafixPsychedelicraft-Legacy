@@ -446,14 +446,18 @@ public class DrugProperties implements IExtendedEntityProperties, PartialUpdateH
 
     public void changeDrugModifier(EntityLivingBase entity, IAttribute attribute, double value, int mode)
     {
-        IAttributeInstance speedInstance = entity.getEntityAttribute(SharedMonsterAttributes.movementSpeed);
-        AttributeModifier oldModifier = speedInstance.getModifier(DrugProperties.drugUUID);
+        IAttributeInstance attributeInstance = entity.getEntityAttribute(attribute);
+        AttributeModifier oldModifier = attributeInstance.getModifier(DrugProperties.drugUUID);
+
+        if (oldModifier != null && oldModifier.getOperation() == mode
+                && Double.compare(oldModifier.getAmount(), value) == 0)
+            return;
 
         if (oldModifier != null)
-            speedInstance.removeModifier(oldModifier);
+            attributeInstance.removeModifier(oldModifier);
 
         AttributeModifier newModifier = new AttributeModifier(DrugProperties.drugUUID, "Drug Effects", value, mode);
-        speedInstance.applyModifier(newModifier);
+        attributeInstance.applyModifier(newModifier);
     }
 
     // IExtendedEntityProperties

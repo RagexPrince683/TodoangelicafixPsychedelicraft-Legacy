@@ -26,6 +26,33 @@ import org.lwjgl.opengl.GL11;
  */
 public class PSCoreHandlerClient
 {
+    public static void onGLSwitch(int cap, boolean enabled)
+    {
+        PSRenderStates.setEnabled(cap, enabled);
+    }
+
+    public static void onGLBlendFunc(int source, int destination, int sourceAlpha, int destinationAlpha)
+    {
+        PSRenderStates.setBlendFunc(source, destination, sourceAlpha, destinationAlpha);
+    }
+
+    public static void onGLActiveTexture(int texture)
+    {
+        GLStateProxy.setActiveTextureUnit(texture);
+    }
+
+    public static void onGLFogi(int parameter, int value)
+    {
+        if (parameter == GL11.GL_FOG_MODE)
+        {
+            PSRenderStates.setFogMode(value);
+        }
+    }
+
+    public static int onGLClear(int mask)
+    {
+        return mask & PSRenderStates.getCurrentAllowedGLDataMask();
+    }
     // Taken from RenderHelper
     private final Vec3 primaryLightDirection = Vec3.createVectorHelper(0.20000000298023224D, 1.0D, -0.699999988079071D).normalize();
     private final Vec3 secondaryLightDirection = Vec3.createVectorHelper(-0.20000000298023224D, 1.0D, 0.699999988079071D).normalize();
@@ -93,19 +120,19 @@ public class PSCoreHandlerClient
     @SubscribeEvent
     public void psycheGLEnable(GLSwitchEvent event)
     {
-        PSRenderStates.setEnabled(event.cap, event.enable);
+        onGLSwitch(event.cap, event.enable);
     }
 
     @SubscribeEvent
     public void psycheGLBlendFunc(GLBlendFuncEvent event)
     {
-        PSRenderStates.setBlendFunc(event.sFactor, event.dFactor, event.dfactorAlpha, event.dfactorAlpha);
+        onGLBlendFunc(event.sFactor, event.dFactor, event.sfactorAlpha, event.dfactorAlpha);
     }
 
     @SubscribeEvent
     public void psycheGLActiveTexture(GLActiveTextureEvent event)
     {
-        GLStateProxy.setActiveTextureUnit(event.texture);
+        onGLActiveTexture(event.texture);
     }
 
     @SubscribeEvent
@@ -219,10 +246,7 @@ public class PSCoreHandlerClient
     @SubscribeEvent
     public void psycheGLFogi(GLFogiEvent event)
     {
-        if (event.pname == GL11.GL_FOG_MODE)
-        {
-            PSRenderStates.setFogMode(event.param);
-        }
+        onGLFogi(event.pname, event.param);
     }
 
     @SubscribeEvent
@@ -265,7 +289,7 @@ public class PSCoreHandlerClient
     @SubscribeEvent
     public void glClear(GLClearEvent event)
     {
-        event.currentMask = event.currentMask & PSRenderStates.getCurrentAllowedGLDataMask();
+        event.currentMask = onGLClear(event.currentMask);
     }
 
     @SubscribeEvent

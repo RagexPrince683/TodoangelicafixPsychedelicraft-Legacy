@@ -31,7 +31,7 @@ public abstract class ScreenEffectWrapper<ScreenEffect extends Iv2DScreenEffect>
     @Override
     public void dealloc()
     {
-
+        screenEffect.destruct();
     }
 
     @Override
