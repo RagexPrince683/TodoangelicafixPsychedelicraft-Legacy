@@ -16,7 +16,6 @@ package ivorius.psychedelicraft.internal.network;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
@@ -98,11 +97,14 @@ public class IvNetworkHelperServer {
         WorldServer server = (WorldServer) world;
         PlayerManager playerManager = server.getPlayerManager();
 
-        List<EntityPlayerMP> players = server.playerEntities;
-        playersWatching.addAll(
-            players.stream()
-                .filter(player -> playerManager.isPlayerWatchingChunk(player, chunkX, chunkZ))
-                .collect(Collectors.toList()));
+        for (EntityPlayer player : server.playerEntities) {
+            if (player instanceof EntityPlayerMP) {
+                EntityPlayerMP playerMP = (EntityPlayerMP) player;
+                if (playerManager.isPlayerWatchingChunk(playerMP, chunkX, chunkZ)) {
+                    playersWatching.add(playerMP);
+                }
+            }
+        }
 
         return playersWatching;
     }
