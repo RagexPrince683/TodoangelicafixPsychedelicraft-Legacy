@@ -21,7 +21,7 @@ import java.util.List;
 public class AcquisitionRecipeHandler extends TemplateRecipeHandler
 {
     public static final String ID = "psychedelicraft.acquisition";
-    private static List<Acquisition> index;
+    private List<Acquisition> index;
 
     @Override
     public String getRecipeName()
@@ -82,7 +82,7 @@ public class AcquisitionRecipeHandler extends TemplateRecipeHandler
                 StatCollector.translateToLocal(acquisition.textKey), 4, 65, 162, 0x404040);
     }
 
-    private static List<Acquisition> index()
+    private List<Acquisition> index()
     {
         if (index == null)
         {
@@ -119,8 +119,8 @@ public class AcquisitionRecipeHandler extends TemplateRecipeHandler
         return index;
     }
 
-    private static void addPlant(List<Acquisition> entries, String name, ItemStack seed, ItemStack maturePlant,
-                                 ItemStack... harvest)
+    private void addPlant(List<Acquisition> entries, String name, ItemStack seed, ItemStack maturePlant,
+                          ItemStack... harvest)
     {
         entries.add(new Acquisition("nei.psychedelicraft.acquire." + name + ".seed", seed,
                 maturePlant, new ItemStack(Items.emerald)));
@@ -128,7 +128,7 @@ public class AcquisitionRecipeHandler extends TemplateRecipeHandler
             entries.add(new Acquisition("nei.psychedelicraft.acquire." + name + ".harvest", output, seed, maturePlant));
     }
 
-    private static class Acquisition extends CachedRecipe
+    private class Acquisition extends CachedRecipe
     {
         private final String textKey;
         private final List<PositionedStack> inputs = new ArrayList<>();
