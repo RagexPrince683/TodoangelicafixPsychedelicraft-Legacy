@@ -22,7 +22,7 @@ tasks.named('jar', Jar) {
                 'Implementation-Version': project.version
         )
     }
-    archiveBaseName = 'Psychedelicraft'
+    archiveBaseName = 'DHPsychedelicraft'
 }
 
 
