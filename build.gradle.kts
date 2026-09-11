@@ -16,7 +16,7 @@ repositories {
     mavenCentral()
 }
 
-val NEXT_VERSION = "1.5.4"
+val NEXT_VERSION = "1.0.0"
 version = NEXT_VERSION
 
 fun getGitHash(): String {
