@@ -1,3 +1,21 @@
+# Fix NEI cached-recipe handler ownership
+
+## Fixed
+
+- Changed the Acquisition, Drying, and Drink Preparation cached recipe types to
+  non-static inner classes so each `TemplateRecipeHandler.CachedRecipe` has the
+  required enclosing handler instance.
+- Moved each affected lazy recipe index from shared static state to its owning
+  handler instance, while retaining immutable bounded indexes and all existing
+  recipe, usage, ingredient-alternative, slot, catalyst, and localization data.
+
+## Compatibility and verification
+
+- Forge 1.7.10, Java 8, and the optional NEI dependency declarations are
+  unchanged.
+- The affected source paths and repository diff were inspected without compiling
+  binaries, adding tests, or launching Minecraft.
+
 # Remove normal ItemLightingEvent rendering allocations
 
 ## Item lighting path

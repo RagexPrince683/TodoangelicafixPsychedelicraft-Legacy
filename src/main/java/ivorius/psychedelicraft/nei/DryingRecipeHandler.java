@@ -21,7 +21,7 @@ public class DryingRecipeHandler extends TemplateRecipeHandler
     public static final String ID = "psychedelicraft.drying";
     private static final int[] SLOT_X = {37, 55, 73, 37, 55, 73, 37, 55, 73};
     private static final int[] SLOT_Y = {12, 12, 12, 30, 30, 30, 48, 48, 48};
-    private static List<CachedDryingRecipe> recipeIndex;
+    private List<CachedDryingRecipe> recipeIndex;
 
     @Override
     public String getRecipeName()
@@ -77,7 +77,7 @@ public class DryingRecipeHandler extends TemplateRecipeHandler
                 StatCollector.translateToLocal("nei.psychedelicraft.drying.conditions"), 4, 82, 162, 0x404040);
     }
 
-    private static List<CachedDryingRecipe> index()
+    private List<CachedDryingRecipe> index()
     {
         if (recipeIndex == null)
         {
@@ -110,7 +110,7 @@ public class DryingRecipeHandler extends TemplateRecipeHandler
         return stacks;
     }
 
-    private static class CachedDryingRecipe extends CachedRecipe
+    private class CachedDryingRecipe extends CachedRecipe
     {
         private final PositionedStack input;
         private final PositionedStack output;

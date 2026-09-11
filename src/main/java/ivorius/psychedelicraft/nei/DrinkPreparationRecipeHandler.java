@@ -19,7 +19,7 @@ import java.util.List;
 public class DrinkPreparationRecipeHandler extends TemplateRecipeHandler
 {
     public static final String ID = "psychedelicraft.drinkPreparation";
-    private static List<CachedDrink> index;
+    private List<CachedDrink> index;
 
     @Override
     public String getRecipeName()
@@ -72,7 +72,7 @@ public class DrinkPreparationRecipeHandler extends TemplateRecipeHandler
         }
     }
 
-    private static List<CachedDrink> index()
+    private List<CachedDrink> index()
     {
         if (index == null)
         {
@@ -111,7 +111,7 @@ public class DrinkPreparationRecipeHandler extends TemplateRecipeHandler
         return holders;
     }
 
-    private static class CachedDrink extends CachedRecipe
+    private class CachedDrink extends CachedRecipe
     {
         private final List<PositionedStack> inputs = new ArrayList<>();
         private final PositionedStack output;
