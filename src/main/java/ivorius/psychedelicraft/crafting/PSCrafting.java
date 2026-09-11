@@ -15,6 +15,7 @@ import ivorius.psychedelicraft.items.ItemSmokingPipe;
 import ivorius.psychedelicraft.mods.YeGamolChattels;
 import net.minecraft.block.BlockWood;
 import net.minecraft.entity.passive.EntitySheep;
+import net.minecraft.init.Blocks;
 import net.minecraft.init.Items;
 import net.minecraft.item.ItemDye;
 import net.minecraft.item.ItemStack;
@@ -98,6 +99,12 @@ public class PSCrafting
 
         addRecipe(new ItemStack(dryingTable), "###", "#R#", '#', DC_PLANK_WOOD, 'R', DC_REDSTONE_DUST);
         addRecipe(new ItemStack(dryingTableIron), "#I#", "IRI", '#', DC_PLANK_WOOD, 'R', DC_REDSTONE_DUST, 'I', DC_IRON_INGOT);
+        addRecipe(new ItemStack(growLight), "GPG", "RLR", "III",
+                'G', "blockGlass",
+                'P', "dyePurple",
+                'R', Items.redstone,
+                'L', Blocks.glowstone,
+                'I', "ingotIron");
 
         DryingRegistry.addDryingResult(DC_LEAF_CANNABIS, new ItemStack(driedCannabisLeaves, 3));
         DryingRegistry.addDryingResult(DC_BUD_CANNABIS, new ItemStack(driedCannabisBuds, 3));
