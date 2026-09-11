@@ -68,6 +68,14 @@ or the per-player tick frequency was intentional, so this change does not invent
 distance, dimension, terrain, or population rules. Developer feedback is still
 needed if those spawn conditions should be narrower.
 
+## Grow Light
+
+The Grow Light is a craftable, animated purple full-cube block that emits vanilla
+light level 15. A Grow Light in the surrounding 3x3x3 area makes a Drying Table
+process 30% faster. Minecraft 1.7.10 still renders the emitted world light as
+white unless a compatible shader feature supplies colored lighting; the block
+itself requires no colored-light mod, custom renderer, or tile entity.
+
 ## Optional Not Enough Items integration
 
 When Not Enough Items 2.7.4-GTNH is installed on the client, Psychedelicraft adds

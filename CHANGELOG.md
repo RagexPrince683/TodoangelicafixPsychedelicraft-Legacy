@@ -1,3 +1,19 @@
+# Add Grow Light purple appearance and crafting recipe
+
+## Added
+
+* Added a shaped Ore Dictionary recipe for one Grow Light using glass, purple
+  dye, redstone, glowstone, and iron ingots.
+* Documented the Grow Light's animated purple appearance, maximum vanilla light,
+  and 30% Drying Table processing bonus.
+
+## Changed
+
+* Bound the existing `grow_light` block to the supplied `grow_lamp` animated
+  texture and corrected the texture metadata filename for Minecraft resource
+  loading. Vanilla Minecraft 1.7.10 still emits white world light without a
+  compatible shader feature.
+
 # Add grow light drying accelerator
 
 ## Added

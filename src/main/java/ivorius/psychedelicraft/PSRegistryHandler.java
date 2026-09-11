@@ -96,7 +96,7 @@ public class PSRegistryHandler
 
         growLight = new BlockGrowLight()
                 .setBlockName("growLight")
-                .setBlockTextureName(modBase + "grow_light");
+                .setBlockTextureName(modBase + "grow_lamp");
         growLight.setCreativeTab(Psychedelicraft.creativeTab);
         GameRegistry.registerBlock(growLight, "grow_light");
 
