@@ -94,6 +94,12 @@ public class PSRegistryHandler
         GameRegistry.registerBlock(dryingTableIron, "ironDryingTable");
         GameRegistry.registerTileEntityWithAlternatives(TileEntityDryingTable.class, "ygcIronDryingTable", "ironDryingTable");
 
+        growLight = new BlockGrowLight()
+                .setBlockName("growLight")
+                .setBlockTextureName(modBase + "grow_light");
+        growLight.setCreativeTab(Psychedelicraft.creativeTab);
+        GameRegistry.registerBlock(growLight, "grow_light");
+
         barrel = new BlockBarrel().setHardness(2.0F).setBlockName("psBarrel").setBlockTextureName(modBase + "barrel");
         barrel.setCreativeTab(Psychedelicraft.drinksTab);
         GameRegistry.registerBlock(barrel, ItemBarrel.class, "barrel");
