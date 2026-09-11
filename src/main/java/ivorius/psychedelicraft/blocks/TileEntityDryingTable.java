@@ -34,9 +34,16 @@ import java.util.List;
 
 public class TileEntityDryingTable extends TileEntity implements ISidedInventory, PartialUpdateHandler
 {
+    private static final double GROW_LIGHT_PROCESSING_MULTIPLIER = 1.30D;
+    private static final int GROW_LIGHT_SCAN_INTERVAL = 20;
+
     public float heatRatio;
     public float dryingProgress;
     public ItemStack plannedResult;
+
+    private double dryingProgressAccumulator;
+    private boolean growLightNearby;
+    private int growLightScanTicksRemaining;
 
     public ItemStack[] dryingTableItems = new ItemStack[10];
 
@@ -49,28 +56,89 @@ public class TileEntityDryingTable extends TileEntity implements ISidedInventory
 
         ticksAlive++;
 
-        if (ticksAlive % 30 == 5 && !worldObj.isRemote)
+        if (!worldObj.isRemote)
         {
-            calculateHeatRatio();
+            updateDryingProcess();
 
-            if (worldObj.getRainStrength(1.0f) > 0.0f && worldObj.getPrecipitationHeight(xCoord, yCoord) == yCoord + 1)
-                dryingProgress = 0;
+            if (ticksAlive % 30 == 5)
+            {
+                calculateHeatRatio();
 
-            IvNetworkHelperServer.sendTileEntityUpdatePacket(this, "dryingProgress", Psychedelicraft.network);
+                if (worldObj.getRainStrength(1.0f) > 0.0f && worldObj.getPrecipitationHeight(xCoord, yCoord) == yCoord + 1)
+                {
+                    resetDryingProgress();
+                }
+
+                IvNetworkHelperServer.sendTileEntityUpdatePacket(this, "dryingProgress", Psychedelicraft.network);
+            }
         }
+    }
 
+    private void updateDryingProcess()
+    {
         if (plannedResult != null)
         {
-            dryingProgress += heatRatio / (float)(worldObj.getBlock(xCoord, yCoord, zCoord).equals(PSBlocks.dryingTableIron)
-                    ? PSConfig.ironDryingTableTickDuration : PSConfig.dryingTableTickDuration);
+            updateGrowLightCache();
 
-            if (dryingProgress >= 1.0f && !worldObj.isRemote)
+            int duration = worldObj.getBlock(xCoord, yCoord, zCoord) == PSBlocks.dryingTableIron
+                    ? PSConfig.ironDryingTableTickDuration
+                    : PSConfig.dryingTableTickDuration;
+            double processingRate = growLightNearby ? GROW_LIGHT_PROCESSING_MULTIPLIER : 1.0D;
+            dryingProgressAccumulator += heatRatio * processingRate / duration;
+            dryingProgressAccumulator = Math.min(dryingProgressAccumulator, 1.0D);
+            dryingProgress = (float) dryingProgressAccumulator;
+
+            if (dryingProgressAccumulator >= 1.0D)
                 endDryingProcess();
         }
         else
         {
-            dryingProgress = 0;
+            resetDryingProgress();
+            growLightNearby = false;
+            growLightScanTicksRemaining = 0;
         }
+    }
+
+    private void updateGrowLightCache()
+    {
+        if (growLightScanTicksRemaining <= 0)
+        {
+            growLightNearby = hasGrowLightNearby();
+            growLightScanTicksRemaining = GROW_LIGHT_SCAN_INTERVAL - 1;
+        }
+        else
+        {
+            growLightScanTicksRemaining--;
+        }
+    }
+
+    private boolean hasGrowLightNearby()
+    {
+        for (int xOffset = -1; xOffset <= 1; xOffset++)
+        {
+            for (int yOffset = -1; yOffset <= 1; yOffset++)
+            {
+                for (int zOffset = -1; zOffset <= 1; zOffset++)
+                {
+                    if (xOffset == 0 && yOffset == 0 && zOffset == 0)
+                        continue;
+
+                    int x = xCoord + xOffset;
+                    int y = yCoord + yOffset;
+                    int z = zCoord + zOffset;
+                    if (worldObj.blockExists(x, y, z) && worldObj.getBlock(x, y, z) == PSBlocks.growLight)
+                        return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private void resetDryingProgress()
+    {
+        dryingProgressAccumulator = 0.0D;
+        dryingProgress = 0.0F;
     }
 
     public ItemStack getResult()
@@ -92,7 +160,7 @@ public class TileEntityDryingTable extends TileEntity implements ISidedInventory
 
     public void endDryingProcess()
     {
-        dryingProgress = 0;
+        resetDryingProgress();
 
         for (int i = 1; i < 10; i++)
             dryingTableItems[i] = null;
@@ -151,6 +219,7 @@ public class TileEntityDryingTable extends TileEntity implements ISidedInventory
 
         par1NBTTagCompound.setFloat("heatRatio", heatRatio);
         par1NBTTagCompound.setFloat("dryingProgress", dryingProgress);
+        par1NBTTagCompound.setDouble("dryingProgressAccumulator", dryingProgressAccumulator);
     }
 
     @Override
@@ -174,6 +243,10 @@ public class TileEntityDryingTable extends TileEntity implements ISidedInventory
 
         heatRatio = par1NBTTagCompound.getFloat("heatRatio");
         dryingProgress = par1NBTTagCompound.getFloat("dryingProgress");
+        if (par1NBTTagCompound.hasKey("dryingProgressAccumulator", Constants.NBT.TAG_DOUBLE))
+            dryingProgressAccumulator = par1NBTTagCompound.getDouble("dryingProgressAccumulator");
+        else
+            dryingProgressAccumulator = dryingProgress;
     }
 
     @Override
@@ -247,7 +320,9 @@ public class TileEntityDryingTable extends TileEntity implements ISidedInventory
     public void onInventoryChanged()
     {
         plannedResult = getResult();
-        dryingProgress = 0.0f;
+        resetDryingProgress();
+        growLightNearby = false;
+        growLightScanTicksRemaining = 0;
 
         markDirty();
         worldObj.markBlockForUpdate(xCoord, yCoord, zCoord);

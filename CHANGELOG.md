@@ -1,3 +1,19 @@
+# Add grow light drying accelerator
+
+## Added
+
+* Added the `grow_light` glass-style, full-cube light block to the main
+  Psychedelicraft creative tab. It emits the maximum Minecraft light level and
+  intentionally has no crafting recipe, tile entity, or custom renderer.
+* Added the Grow Light display name to every bundled language file and renamed
+  the supplied animated texture assets to match the block registry name.
+
+## Changed
+
+* Drying tables now process valid recipes 30% faster while at least one Grow
+  Light is present in the surrounding 3x3x3 cube. Detection is cached for 20
+  processing ticks, does not stack, and preserves fractional progress in NBT.
+
 # Restore NEI drying and drink lookup
 
 ## Fixed
