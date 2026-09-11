@@ -1,3 +1,32 @@
+# Restore NEI drying and drink lookup
+
+## Fixed
+
+* Replaced unsupported `Object[]` recipe inputs with copied, validated typed
+  drying arrays and drink alternative lists, preventing lookup-time
+  `PositionedStack` failures.
+* Restored every valid `DryingRegistry` entry as a nine-slot drying recipe,
+  preserved Ore Dictionary alternatives, metadata, NBT and output quantities,
+  and retained both Drying Table catalysts.
+* Added bounded shared descriptor snapshots while keeping mutable NEI recipe and
+  ingredient-cycling objects local to each handler instance.
+* Matched filled drink results by container and meaningful fluid identity/state
+  without requiring an exact quantity.
+
+## Changed
+
+* Replaced the misleading acquisition crafting grid with a plain, localized
+  information page and separated generation, harvesting, trade, and loot paths.
+* Added an explicit Drying Table layout and process-arrow category rectangle;
+  this lookup rectangle does not enable crafting-table inventory transfer.
+
+## Verification
+
+* Source and whitespace checks were run. Dependency resolution could not run
+  because the environment proxy rejected the Gradle distribution download.
+* Per project instructions no binary compilation or game launch was attempted;
+  runtime rendering, navigation, lookup, and catalyst behavior remain unverified.
+
 # Fix NEI cached-recipe handler ownership
 
 ## Fixed

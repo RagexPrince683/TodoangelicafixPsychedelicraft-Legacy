@@ -2,6 +2,7 @@ package ivorius.psychedelicraft.nei;
 
 import codechicken.nei.PositionedStack;
 import codechicken.nei.recipe.TemplateRecipeHandler;
+import codechicken.lib.gui.GuiDraw;
 import ivorius.psychedelicraft.blocks.PSBlocks;
 import ivorius.psychedelicraft.items.PSItems;
 import net.minecraft.client.Minecraft;
@@ -32,13 +33,27 @@ public class AcquisitionRecipeHandler extends TemplateRecipeHandler
     @Override
     public String getGuiTexture()
     {
-        return "textures/gui/container/crafting_table.png";
+        return "psychedelicraft:textures/mod/guiDryingTable.png";
     }
 
     @Override
-    public String getOverlayIdentifier()
+    public int recipiesPerPage()
     {
-        return ID;
+        return 1;
+    }
+
+    @Override
+    public int getRecipeHeight()
+    {
+        return 132;
+    }
+
+    @Override
+    public void drawBackground(int recipe)
+    {
+        GuiDraw.drawRect(0, 0, 166, 132, 0xffeeeeee);
+        GuiDraw.drawRect(0, 0, 166, 1, 0xff777777);
+        GuiDraw.drawRect(0, 131, 166, 1, 0xff777777);
     }
 
     @Override
@@ -78,8 +93,14 @@ public class AcquisitionRecipeHandler extends TemplateRecipeHandler
     public void drawExtras(int recipe)
     {
         Acquisition acquisition = (Acquisition) arecipes.get(recipe);
+        Minecraft.getMinecraft().fontRenderer.drawString(
+                StatCollector.translateToLocal(acquisition.methodKey), 4, 5, 0x303030);
+        Minecraft.getMinecraft().fontRenderer.drawString(
+                StatCollector.translateToLocal("nei.psychedelicraft.acquire.sources"), 4, 22, 0x606060);
+        Minecraft.getMinecraft().fontRenderer.drawString(
+                StatCollector.translateToLocal("nei.psychedelicraft.acquire.result"), 120, 22, 0x606060);
         Minecraft.getMinecraft().fontRenderer.drawSplitString(
-                StatCollector.translateToLocal(acquisition.textKey), 4, 65, 162, 0x404040);
+                StatCollector.translateToLocal(acquisition.textKey), 4, 58, 158, 0x404040);
     }
 
     private List<Acquisition> index()
@@ -98,21 +119,23 @@ public class AcquisitionRecipeHandler extends TemplateRecipeHandler
             addPlant(entries, "coffee", new ItemStack(PSItems.coffeaCherries), new ItemStack(PSBlocks.coffea, 1, 14),
                     new ItemStack(PSItems.coffeaCherries, 6));
 
-            entries.add(new Acquisition("nei.psychedelicraft.acquire.grapes", new ItemStack(PSItems.wineGrapes, 3),
+            entries.add(new Acquisition("nei.psychedelicraft.acquire.method.harvest", "nei.psychedelicraft.acquire.grapes", new ItemStack(PSItems.wineGrapes, 3),
                     new ItemStack(PSBlocks.wineGrapeLattice, 1, 8)));
-            entries.add(new Acquisition("nei.psychedelicraft.acquire.peyote", new ItemStack(PSBlocks.peyote),
-                    new ItemStack(Blocks.sand), new ItemStack(Items.emerald)));
-            entries.add(new Acquisition("nei.psychedelicraft.acquire.juniper", new ItemStack(PSItems.juniperBerries),
+            entries.add(new Acquisition("nei.psychedelicraft.acquire.method.generation", "nei.psychedelicraft.acquire.peyote.generation",
+                    new ItemStack(PSBlocks.peyote), new ItemStack(Blocks.sand)));
+            entries.add(new Acquisition("nei.psychedelicraft.acquire.method.trade", "nei.psychedelicraft.acquire.peyote.trade",
+                    new ItemStack(PSBlocks.peyote), new ItemStack(Items.emerald)));
+            entries.add(new Acquisition("nei.psychedelicraft.acquire.method.harvest", "nei.psychedelicraft.acquire.juniper", new ItemStack(PSItems.juniperBerries),
                     new ItemStack(PSBlocks.psycheLeaves, 1, 1), new ItemStack(PSBlocks.psycheSapling)));
-            entries.add(new Acquisition("nei.psychedelicraft.acquire.mushrooms", new ItemStack(PSItems.magicMushroomsBrown, 3),
+            entries.add(new Acquisition("nei.psychedelicraft.acquire.method.harvest", "nei.psychedelicraft.acquire.mushrooms", new ItemStack(PSItems.magicMushroomsBrown, 3),
                     new ItemStack(Blocks.brown_mushroom)));
-            entries.add(new Acquisition("nei.psychedelicraft.acquire.mushrooms", new ItemStack(PSItems.magicMushroomsRed, 3),
+            entries.add(new Acquisition("nei.psychedelicraft.acquire.method.harvest", "nei.psychedelicraft.acquire.mushrooms", new ItemStack(PSItems.magicMushroomsRed, 3),
                     new ItemStack(Blocks.red_mushroom)));
-            entries.add(new Acquisition("nei.psychedelicraft.acquire.trades", new ItemStack(PSItems.driedCannabisBuds),
+            entries.add(new Acquisition("nei.psychedelicraft.acquire.method.trade", "nei.psychedelicraft.acquire.trades", new ItemStack(PSItems.driedCannabisBuds),
                     new ItemStack(Items.emerald)));
-            entries.add(new Acquisition("nei.psychedelicraft.acquire.loot", new ItemStack(PSItems.driedTobacco),
+            entries.add(new Acquisition("nei.psychedelicraft.acquire.method.loot", "nei.psychedelicraft.acquire.loot", new ItemStack(PSItems.driedTobacco),
                     new ItemStack(Blocks.chest)));
-            entries.add(new Acquisition("nei.psychedelicraft.acquire.unavailable", new ItemStack(PSItems.harmonium),
+            entries.add(new Acquisition("nei.psychedelicraft.acquire.method.unavailable", "nei.psychedelicraft.acquire.unavailable", new ItemStack(PSItems.harmonium),
                     new ItemStack(Items.dye)));
             index = Collections.unmodifiableList(entries);
         }
@@ -122,24 +145,29 @@ public class AcquisitionRecipeHandler extends TemplateRecipeHandler
     private void addPlant(List<Acquisition> entries, String name, ItemStack seed, ItemStack maturePlant,
                           ItemStack... harvest)
     {
-        entries.add(new Acquisition("nei.psychedelicraft.acquire." + name + ".seed", seed,
-                maturePlant, new ItemStack(Items.emerald)));
+        entries.add(new Acquisition("nei.psychedelicraft.acquire.method.harvest",
+                "nei.psychedelicraft.acquire." + name + ".seed", seed, maturePlant));
+        entries.add(new Acquisition("nei.psychedelicraft.acquire.method.trade",
+                "nei.psychedelicraft.acquire." + name + ".trade", seed, new ItemStack(Items.emerald)));
         for (ItemStack output : harvest)
-            entries.add(new Acquisition("nei.psychedelicraft.acquire." + name + ".harvest", output, seed, maturePlant));
+            entries.add(new Acquisition("nei.psychedelicraft.acquire.method.harvest",
+                    "nei.psychedelicraft.acquire." + name + ".harvest", output, maturePlant));
     }
 
     private class Acquisition extends CachedRecipe
     {
+        private final String methodKey;
         private final String textKey;
         private final List<PositionedStack> inputs = new ArrayList<>();
         private final PositionedStack output;
 
-        private Acquisition(String textKey, ItemStack output, ItemStack... inputs)
+        private Acquisition(String methodKey, String textKey, ItemStack output, ItemStack... inputs)
         {
+            this.methodKey = methodKey;
             this.textKey = textKey;
-            this.output = new PositionedStack(output.copy(), 119, 28);
+            this.output = new PositionedStack(output.copy(), 132, 34);
             for (int i = 0; i < inputs.length; i++)
-                this.inputs.add(new PositionedStack(inputs[i].copy(), 20 + i * 24, 28));
+                this.inputs.add(new PositionedStack(inputs[i].copy(), 12 + i * 24, 34));
         }
 
         @Override

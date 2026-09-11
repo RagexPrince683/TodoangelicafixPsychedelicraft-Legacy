@@ -5,9 +5,14 @@ The integration is optional and client-only. NEI discovers
 NEI class. Its API is `compileOnly`, while the existing development runtime is
 non-publishable. No NEI code or dependency is bundled into the published mod.
 
-Handlers build bounded indexes on first use after registration. Caches own copied
-item/fluid data and retain no world, player, GUI, container, or tile entity.
-Restart the client after another mod changes a supported registry at runtime.
+Handlers build complete, validated snapshots on first use after registration.
+Immutable descriptors are shared by the short-lived handler instances NEI creates
+during queries; each handler still owns its mutable `CachedRecipe` and
+`PositionedStack` cycling state. Caches own copied item/fluid data and retain no
+world, player, GUI, container, or tile entity. Invalid entries are omitted as a
+whole and reported once per snapshot rather than breaking every subsequent item
+search. Restart the client after another mod changes a supported registry at
+runtime.
 
 ## Coverage
 
@@ -33,6 +38,22 @@ Restart the client after another mod changes a supported registry at runtime.
 Drying pages read the live registry, including additions from other mods using an
 `Item`, `Block`, `ItemStack`, or Ore Dictionary key. Ore equivalents cycle as one
 ingredient across nine slots instead of generating every possible combination.
+The nine display slots are prepared once per cached recipe, and output counts,
+metadata, and required NBT are retained. A process-arrow lookup opens the Drying
+category but is intentionally not an inventory-transfer rectangle. Both wooden
+and iron Drying Tables are recipe catalysts.
+
+Earlier handlers passed `Object[]` values to `PositionedStack`. NEI only accepts
+an `ItemStack`, `ItemStack[]`, or `List<ItemStack>`, so those arrays failed at
+runtime during recipe lookup. Drying now constructs a typed `ItemStack[]`, while
+drink Ore Dictionary alternatives are normalized to validated lists. Every
+display stack is copied before its count is adjusted or it is cached.
+
+Acquisition is an informational category rather than a crafting overlay. Its
+plain, one-entry-per-page layout keeps clickable source and result icons while
+giving world generation, harvesting, villager trades, and loot separate labels
+and wrapped descriptions. In particular, peyote's sand terrain condition and
+emerald payment are separate methods and are never presented as a recipe.
 
 ## Disabled or unavailable
 
@@ -47,7 +68,9 @@ ingredient across nine slots instead of generating every possible combination.
 ## Limitations
 
 Added categories are reachable with NEI's configured recipe/usage controls
-(default `R`/`U`), and both drying tables are catalysts. Dedicated transition
+(default `R`/`U`), and both drying tables are catalysts. Filled-drink lookup
+matches container item plus fluid identity and fluid state NBT without requiring
+the queried stack to contain the recipe's exact quantity. Dedicated transition
 pages for open fermentation/acetification, closed maturation, distillation
 requirements/byproducts, and pouring are not yet implemented. These unbounded
 NBT state machines require finite examples and adjacent-state query derivation to
