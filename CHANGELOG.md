@@ -1,3 +1,59 @@
+# Diagnose remaining Ragecraft renderWorld transformation report
+
+## Transformer diagnostics and failure reporting
+
+* The core transformer now emits one startup identity diagnostic containing the
+  loaded `IvClassTransformerClass` name, its code-source URL, and the artifact's
+  available `Implementation-Version`. The JAR manifest is explicitly populated
+  from the Gradle project version so a Ragecraft log can identify the selected
+  artifact instead of inferring it from an isolated transformation message.
+* Required-method bookkeeping now records target matching independently from hook
+  installation. An unmatched target reports candidate methods with each actual
+  name, descriptor, normalized SRG name, and normalized descriptor; a matched
+  target whose instruction hook fails is reported as a different failure.
+  `renderWorld`, `renderWorldAdditions`, and `preRenderSky` remain three separately
+  tracked required transformations even though they share `func_78471_a(FJ)V`.
+* The render-hand depth hook no longer reports success for an unsupported
+  instruction pattern or for an existing unpaired pre/post hook. Those cases now
+  fail the required transformation, causing the transformer's existing outer
+  transaction boundary to return the original renderer bytes rather than retain
+  partial changes. Supported vanilla and Angelica depth-clear patterns, operand
+  validation, branch targets, and paired pre/post insertion are unchanged.
+
+## Source and runtime findings
+
+* The quoted `Could not transform expected method in class ...` text is emitted
+  by the repository's copied
+  `ivorius.psychedelicraft.internal.asm.IvClassTransformerClass` at revision
+  `3847739`. Revision `f90d180` replaced that non-throwing error with `Required
+  transformation failed`, and the current source therefore cannot emit the
+  quoted line. The untouched `REFERENCEFOLDER` also contains the upstream
+  IvToolkit wording, but it is outside the current source set and was not changed.
+* `Obf: false` in that historical message only records whether LaunchWrapper gave
+  the manager equal original and transformed class names. It does not establish
+  that SRG normalization was wrong. No normalization change was made because the
+  inspected path already applies Forge method-name/descriptor remapping followed
+  by the development-name fallback.
+* No running Ragecraft artifact, surrounding runtime log, Angelica renderer JAR,
+  or mod-directory inventory is present in this checkout. The only available JAR
+  is the Gradle wrapper. Source-set and build configuration inspection found one
+  packaged transformer implementation and no bundled dependency copy; runtime
+  staleness, duplicate coremods, the exact loaded revision, and the ultimate
+  method-versus-instruction failure therefore remain unconfirmed until the new
+  identity line and surrounding failure are captured from the affected instance.
+
+## Compatibility and visual behavior
+
+* Changed files: `CHANGELOG.md`, `build.gradle.kts`,
+  `IvClassTransformerClass.java`, `PsychedelicraftClassTransformer.java`, and
+  `EntityRendererTransformer.java`.
+* No visual behavior is deliberately disabled. If required render-hand pairing
+  cannot be installed, Psychedelicraft rejects the complete `EntityRenderer`
+  transformation and restores its input bytes; it does not silently claim that
+  only the dependent hand-depth behavior was disabled.
+* Java 8, Forge 1.7.10, Angelica-compatible supported patterns, gameplay data,
+  registrations, NBT, packets, and the build-system version remain unchanged.
+
 # Fix DHPsychedelicraft 1.0.1 Ragecraft startup crash
 
 ## Fixed
