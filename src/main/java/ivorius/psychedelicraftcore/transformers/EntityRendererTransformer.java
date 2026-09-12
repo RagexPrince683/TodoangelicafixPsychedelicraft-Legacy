@@ -144,45 +144,7 @@ public class EntityRendererTransformer extends IvClassTransformerClass
 
                 return transformMatrixNode != null && skipOverlayNode != null;
             case "renderWorld":
-                AbstractInsnNode transformNode = IvNodeFinder.findNode(new IvNodeMatcherMethodSRG(INVOKESPECIAL, "func_78476_b" /* renderHand */, "net/minecraft/client/renderer/EntityRenderer", Type.VOID_TYPE, Type.FLOAT_TYPE, Type.INT_TYPE), methodNode);
-
-                if (transformNode != null)
-                {
-                    AbstractInsnNode glClearNode = findPreviousMethodCall(
-                        transformNode,
-                        INVOKESTATIC,
-                        "org/lwjgl/opengl/GL11",
-                        "glClear",
-                        getMethodDescriptor(Type.VOID_TYPE, Type.INT_TYPE));
-
-                    if (glClearNode != null)
-                    {
-                        AbstractInsnNode clearMask = previousExecutable(glClearNode);
-                        if (!isIntegerConstant(clearMask))
-                        {
-                            printSubMethodError(className, methodID, "preRenderHand glClear operand stack");
-                            return false;
-                        }
-
-                        LabelNode skipGLClearNode = new LabelNode();
-                        methodNode.instructions.insert(glClearNode, skipGLClearNode);
-
-                        InsnList preList = new InsnList();
-                        preList.add(new VarInsnNode(FLOAD, 1));
-                        preList.add(new MethodInsnNode(INVOKESTATIC, "ivorius/psychedelicraftcore/PsycheCoreBusClient", "preRenderHand", getMethodDescriptor(Type.BOOLEAN_TYPE, Type.FLOAT_TYPE), false));
-                        preList.add(new JumpInsnNode(IFNE, skipGLClearNode));
-                        methodNode.instructions.insertBefore(clearMask, preList);
-
-                        InsnList postList = new InsnList();
-                        postList.add(new VarInsnNode(FLOAD, 1));
-                        postList.add(new MethodInsnNode(INVOKESTATIC, "ivorius/psychedelicraftcore/PsycheCoreBusClient", "postRenderHand", getMethodDescriptor(Type.VOID_TYPE, Type.FLOAT_TYPE), false));
-                        methodNode.instructions.insert(transformNode, postList);
-
-                        return true;
-                    }
-                }
-                printSubMethodError(className, methodID, "preRenderHand GL11.glClear(I)V");
-                break;
+                return transformRenderWorldHand(className, methodID, methodNode);
             case "setupFog":
                 List<AbstractInsnNode> glFogiNodes = IvNodeFinder.findNodes(new IvNodeMatcherMethodSRG(INVOKESTATIC, "glFogi", "org/lwjgl/opengl/GL11", null), methodNode);
 
@@ -251,20 +213,146 @@ public class EntityRendererTransformer extends IvClassTransformerClass
         return previous;
     }
 
-    private static AbstractInsnNode findPreviousMethodCall(AbstractInsnNode start, int opcode, String owner, String name, String descriptor)
+    private boolean transformRenderWorldHand(String className, String methodID, MethodNode methodNode)
     {
-        for (AbstractInsnNode node = start.getPrevious(); node != null; node = node.getPrevious())
+        String preDescriptor = getMethodDescriptor(Type.BOOLEAN_TYPE, Type.FLOAT_TYPE);
+        String postDescriptor = getMethodDescriptor(Type.VOID_TYPE, Type.FLOAT_TYPE);
+        boolean hasPreHook = hasHookCall(methodNode, "preRenderHand", preDescriptor);
+        boolean hasPostHook = hasHookCall(methodNode, "postRenderHand", postDescriptor);
+
+        if (hasPreHook || hasPostHook)
         {
-            if (node.getOpcode() == opcode)
+            if (hasPreHook && hasPostHook)
             {
-                MethodInsnNode method = (MethodInsnNode) node;
-                if (owner.equals(method.owner) && name.equals(method.name) && descriptor.equals(method.desc))
-                {
-                    return node;
-                }
+                return true;
+            }
+
+            logDisabledRenderHandFeature(className, methodID, methodNode, "duplicate-hook pairing");
+            return true;
+        }
+
+        MethodInsnNode renderHandCall = findRenderHandCall(methodNode);
+        if (renderHandCall == null)
+        {
+            logDisabledRenderHandFeature(className, methodID, methodNode, "renderHand call");
+            return true;
+        }
+
+        AbstractInsnNode renderPass = previousExecutable(renderHandCall);
+        AbstractInsnNode partialTicks = previousExecutable(renderPass);
+        AbstractInsnNode renderer = previousExecutable(partialTicks);
+        AbstractInsnNode depthClearCall = previousExecutable(renderer);
+        AbstractInsnNode clearMask = previousExecutable(depthClearCall);
+
+        if (!isRenderHandOperands(renderer, partialTicks, renderPass))
+        {
+            logDisabledRenderHandFeature(className, methodID, methodNode, "renderHand operand stack");
+            return true;
+        }
+        if (!isSupportedDepthClear(depthClearCall))
+        {
+            logDisabledRenderHandFeature(className, methodID, methodNode, "hand depth-clear call");
+            return true;
+        }
+        if (!isIntegerConstant(clearMask) || integerConstant(clearMask) != 0x100)
+        {
+            logDisabledRenderHandFeature(className, methodID, methodNode, "hand depth-clear mask");
+            return true;
+        }
+
+        LabelNode skipDepthClear = new LabelNode();
+        InsnList preList = new InsnList();
+        preList.add(new VarInsnNode(FLOAD, 1));
+        preList.add(new MethodInsnNode(INVOKESTATIC, "ivorius/psychedelicraftcore/PsycheCoreBusClient", "preRenderHand", preDescriptor, false));
+        preList.add(new JumpInsnNode(IFNE, skipDepthClear));
+
+        InsnList postList = new InsnList();
+        postList.add(new VarInsnNode(FLOAD, 1));
+        postList.add(new MethodInsnNode(INVOKESTATIC, "ivorius/psychedelicraftcore/PsycheCoreBusClient", "postRenderHand", postDescriptor, false));
+
+        methodNode.instructions.insertBefore(clearMask, preList);
+        methodNode.instructions.insert(depthClearCall, skipDepthClear);
+        methodNode.instructions.insert(renderHandCall, postList);
+        return true;
+    }
+
+    private static MethodInsnNode findRenderHandCall(MethodNode methodNode)
+    {
+        for (AbstractInsnNode node = methodNode.instructions.getFirst(); node != null; node = node.getNext())
+        {
+            if (!(node instanceof MethodInsnNode)
+                || (node.getOpcode() != INVOKESPECIAL && node.getOpcode() != INVOKEVIRTUAL))
+            {
+                continue;
+            }
+
+            MethodInsnNode method = (MethodInsnNode) node;
+            if ("func_78476_b".equals(getSrgName(method))
+                && "net/minecraft/client/renderer/EntityRenderer".equals(getSrgClassName(method.owner))
+                && getMethodDescriptor(Type.VOID_TYPE, Type.FLOAT_TYPE, Type.INT_TYPE).equals(getSRGDescriptor(method.desc)))
+            {
+                return method;
             }
         }
         return null;
+    }
+
+    private static boolean isRenderHandOperands(AbstractInsnNode renderer, AbstractInsnNode partialTicks, AbstractInsnNode renderPass)
+    {
+        return renderer instanceof VarInsnNode
+            && renderer.getOpcode() == ALOAD
+            && ((VarInsnNode) renderer).var == 0
+            && partialTicks instanceof VarInsnNode
+            && partialTicks.getOpcode() == FLOAD
+            && ((VarInsnNode) partialTicks).var == 1
+            && renderPass instanceof VarInsnNode
+            && renderPass.getOpcode() == ILOAD;
+    }
+
+    private static boolean isSupportedDepthClear(AbstractInsnNode node)
+    {
+        if (!(node instanceof MethodInsnNode) || node.getOpcode() != INVOKESTATIC)
+        {
+            return false;
+        }
+
+        MethodInsnNode method = (MethodInsnNode) node;
+        if (!getMethodDescriptor(Type.VOID_TYPE, Type.INT_TYPE).equals(method.desc) || !"glClear".equals(method.name))
+        {
+            return false;
+        }
+
+        return "org/lwjgl/opengl/GL11".equals(method.owner)
+            || "com/gtnewhorizons/angelica/glsm/GLStateManager".equals(method.owner);
+    }
+
+    private static boolean hasHookCall(MethodNode methodNode, String name, String descriptor)
+    {
+        for (AbstractInsnNode node = methodNode.instructions.getFirst(); node != null; node = node.getNext())
+        {
+            if (node instanceof MethodInsnNode)
+            {
+                MethodInsnNode method = (MethodInsnNode) node;
+                if (method.getOpcode() == INVOKESTATIC
+                    && "ivorius/psychedelicraftcore/PsycheCoreBusClient".equals(method.owner)
+                    && name.equals(method.name)
+                    && descriptor.equals(method.desc))
+                {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private void logDisabledRenderHandFeature(String className, String methodID, MethodNode methodNode, String stage)
+    {
+        logger.warn("Disabled hand depth effect: class=" + className
+            + ", method=" + methodNode.name + methodNode.desc
+            + ", hook=" + methodID
+            + ", failedMatchStage=" + stage
+            + ", unmatchedInstructionPattern=GL_DEPTH_BUFFER_BIT; INVOKESTATIC {GL11|Angelica GLStateManager}.glClear(I)V; ALOAD 0; FLOAD 1; ILOAD n; {INVOKESPECIAL|INVOKEVIRTUAL} EntityRenderer.renderHand(FI)V"
+            + ". The renderer was left unchanged for this hook.");
     }
 
     private static boolean isIntegerConstant(AbstractInsnNode node)
@@ -284,4 +372,18 @@ public class EntityRendererTransformer extends IvClassTransformerClass
         }
         return opcode == LDC && ((LdcInsnNode) node).cst instanceof Integer;
     }
+
+    private static int integerConstant(AbstractInsnNode node)
+    {
+        if (node.getOpcode() >= ICONST_M1 && node.getOpcode() <= ICONST_5)
+        {
+            return node.getOpcode() - ICONST_0;
+        }
+        if (node instanceof IntInsnNode)
+        {
+            return ((IntInsnNode) node).operand;
+        }
+        return (Integer) ((LdcInsnNode) node).cst;
+    }
+
 }

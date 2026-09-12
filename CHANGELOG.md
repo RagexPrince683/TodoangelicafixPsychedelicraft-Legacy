@@ -1,3 +1,37 @@
+# Fix DHPsychedelicraft 1.0.1 Ragecraft startup crash
+
+## Fixed
+
+* Confirmed that the failing `renderWorld` stage was the hand-rendering depth-clear
+  match, not method remapping: `func_78471_a(FJ)V` had already been found, while
+  Angelica can rewrite the adjacent `GL11.glClear(I)V` owner to its
+  `GLStateManager.glClear(I)V` wrapper.
+* The hand hook now anchors on the supported `renderHand(float, int)` invocation,
+  accepts its valid special or virtual invocation forms, and only selects the
+  immediately associated `GL_DEPTH_BUFFER_BIT` clear. Vanilla LWJGL and Angelica
+  GLSM owners are supported without matching an unrelated earlier clear.
+* All hand-hook insertion points and operand shapes are validated before mutation.
+  Existing paired hooks are not duplicated. An unknown renderer now leaves this
+  one hook unchanged and logs its class, method, hook, and failed match stage once,
+  disabling only the non-default render-pass hand depth effect rather than aborting
+  startup or returning partially patched bytecode. Other required hooks remain
+  required and visible on failure.
+* Corrected `postRenderHand` to post `RenderHandEvent.Post`, restoring the intended
+  pre/post pairing and depth-multiplier reset after hand rendering.
+
+## Compatibility notes
+
+* Changed files: `CHANGELOG.md`, `EntityRendererTransformer.java`, and
+  `PsycheCoreBusClient.java`.
+* The inspected code supports the vanilla/development and production SRG names,
+  vanilla `GL11.glClear`, and Angelica's GLSM `glClear` replacement. Runtime
+  confirmation with the exact Ragecraft Angelica build is still unresolved because
+  no Angelica binary or source is available in this checkout.
+* Weather2's annotation warning and HardcoreDarkness's preceding log message have
+  no code connection to this confirmed instruction-match failure and remain
+  separate. No gameplay, data format, registration, or dedicated-server loading
+  path was changed.
+
 # Add Grow Light purple appearance and crafting recipe
 
 ## Added
