@@ -14,7 +14,11 @@
 package ivorius.psychedelicraft.internal.asm;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Hashtable;
+import java.util.Set;
 
 import net.minecraft.launchwrapper.IClassTransformer;
 
@@ -25,15 +29,26 @@ public class IvClassTransformerManager implements IClassTransformer {
 
     public Hashtable<String, IvClassTransformer> transformers;
     public ArrayList<IvClassTransformer> generalTransformers;
+    public Hashtable<String, ArrayList<IvClassTransformer>> scopedGeneralTransformers;
+
+    private static final Set<String> APPROVED_CLASSES = Collections.unmodifiableSet(new HashSet<String>(Arrays.asList(
+        "net.minecraft.client.renderer.EntityRenderer",
+        "net.minecraft.client.renderer.RenderGlobal",
+        "net.minecraft.client.renderer.OpenGlHelper",
+        "net.minecraft.client.renderer.RenderHelper",
+        "net.minecraft.client.audio.SoundManager"
+    )));
 
     public IvClassTransformerManager() {
         transformers = new Hashtable<String, IvClassTransformer>();
         generalTransformers = new ArrayList<IvClassTransformer>();
+        scopedGeneralTransformers = new Hashtable<String, ArrayList<IvClassTransformer>>();
 
         IvDevRemapper.setUp();
     }
 
     public void registerTransformer(String clazz, IvClassTransformer transformer) {
+        requireApprovedClass(clazz);
         transformers.put(clazz, transformer);
     }
 
@@ -41,31 +56,68 @@ public class IvClassTransformerManager implements IClassTransformer {
         generalTransformers.add(transformer);
     }
 
+    public void registerGeneralTransformer(String clazz, IvClassTransformer transformer) {
+        requireApprovedClass(clazz);
+
+        ArrayList<IvClassTransformer> classTransformers = scopedGeneralTransformers.get(clazz);
+        if (classTransformers == null) {
+            classTransformers = new ArrayList<IvClassTransformer>();
+            scopedGeneralTransformers.put(clazz, classTransformers);
+        }
+        classTransformers.add(transformer);
+    }
+
+    public static boolean isApprovedClass(String transformedName) {
+        return transformedName != null && APPROVED_CLASSES.contains(transformedName);
+    }
+
+    private static void requireApprovedClass(String clazz) {
+        if (!isApprovedClass(clazz)) {
+            throw new IllegalArgumentException("Transformer target is not explicitly approved: " + clazz);
+        }
+    }
+
     @Override
-    public byte[] transform(String arg0, String arg1, byte[] arg2) {
-        if (arg2 != null) {
-            byte[] result = arg2;
-
-            IvClassTransformer transformer = transformers.get(arg1);
-            if (transformer != null) {
-                byte[] data = transformer.transform(arg0, arg1, result, arg0.equals(arg1));
-
-                if (data != null) {
-                    result = data;
-                }
-            }
-
-            for (IvClassTransformer generalTransformer : generalTransformers) {
-                byte[] data = generalTransformer.transform(arg0, arg1, result, arg0.equals(arg1));
-
-                if (data != null) {
-                    result = data;
-                }
-            }
-
-            return result;
+    public byte[] transform(String name, String transformedName, byte[] basicClass) {
+        if (basicClass == null) {
+            return null;
         }
 
-        return arg2;
+        // This must remain before every parser, matcher, hierarchy query, and writer.
+        if (!isApprovedClass(transformedName)) {
+            return basicClass;
+        }
+
+        byte[] result = basicClass;
+
+        IvClassTransformer transformer = transformers.get(transformedName);
+        if (transformer != null) {
+            byte[] data = transformer.transform(name, transformedName, result, transformedName.equals(name));
+
+            if (data != null) {
+                result = data;
+            }
+        }
+
+        ArrayList<IvClassTransformer> scopedTransformers = scopedGeneralTransformers.get(transformedName);
+        if (scopedTransformers != null) {
+            for (IvClassTransformer generalTransformer : scopedTransformers) {
+                byte[] data = generalTransformer.transform(name, transformedName, result, transformedName.equals(name));
+
+                if (data != null) {
+                    result = data;
+                }
+            }
+        }
+
+        for (IvClassTransformer generalTransformer : generalTransformers) {
+            byte[] data = generalTransformer.transform(name, transformedName, result, transformedName.equals(name));
+
+            if (data != null) {
+                result = data;
+            }
+        }
+
+        return result;
     }
 }

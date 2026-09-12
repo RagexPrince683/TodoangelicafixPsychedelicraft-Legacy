@@ -30,7 +30,12 @@ public class PsychedelicraftClassTransformer extends IvClassTransformerManager
         registerTransformer("net.minecraft.client.renderer.RenderHelper", new RenderHelperTransformer(logger));
         registerTransformer("net.minecraft.client.audio.SoundManager", new SoundManagerTransformer(logger));
 
-        registerTransformer(new OpenGLTransfomer(logger));
+        OpenGLTransfomer openGLTransformer = new OpenGLTransfomer(logger);
+        registerGeneralTransformer("net.minecraft.client.renderer.EntityRenderer", openGLTransformer);
+        registerGeneralTransformer("net.minecraft.client.renderer.RenderGlobal", openGLTransformer);
+        registerGeneralTransformer("net.minecraft.client.renderer.OpenGlHelper", openGLTransformer);
+        registerGeneralTransformer("net.minecraft.client.renderer.RenderHelper", openGLTransformer);
+        registerGeneralTransformer("net.minecraft.client.audio.SoundManager", openGLTransformer);
     }
 
     private static void logTransformerIdentity(Logger logger)
