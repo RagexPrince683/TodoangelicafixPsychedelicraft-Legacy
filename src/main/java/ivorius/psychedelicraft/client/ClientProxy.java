@@ -35,10 +35,16 @@ import net.minecraft.client.resources.IResourceManager;
 import net.minecraft.client.resources.IResourceManagerReloadListener;
 import net.minecraft.client.resources.IReloadableResourceManager;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.Item;
+import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.Vec3;
+import net.minecraft.world.World;
 import net.minecraftforge.client.MinecraftForgeClient;
+import net.minecraftforge.common.util.ForgeDirection;
+import net.minecraftforge.fluids.IFluidHandler;
+import ivorius.psychedelicraft.gui.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -59,8 +65,8 @@ public class ClientProxy implements PSProxy
     public void preInit()
     {
         FMLCommonHandler.instance().bus().register(new ClientPacketQueue());
-        Psychedelicraft.coreHandlerClient = new PSCoreHandlerClient();
-        Psychedelicraft.coreHandlerClient.register();
+        new ClientEventHandler().register();
+        new PSCoreHandlerClient().register();
     }
 
     @Override
@@ -172,5 +178,50 @@ public class ClientProxy implements PSProxy
             for (String s : names)
                 readHasBGM(s, config);
         }
+    }
+
+    @Override
+    public void handleExtendedEntityPropertiesData(int entityID, String eepKey, String context, byte[] payload)
+    {
+        ClientPacketHandler.handleExtendedEntityPropertiesData(entityID, eepKey, context, payload);
+    }
+
+    @Override
+    public void handleTileEntityData(int x, int y, int z, String context, byte[] payload)
+    {
+        ClientPacketHandler.handleTileEntityData(x, y, z, context, payload);
+    }
+
+    @Override
+    public Object getClientGuiElement(int id, EntityPlayer player, World world, int x, int y, int z)
+    {
+        TileEntity tileEntity = world.getTileEntity(x, y, z);
+        if (id == PSGuiHandler.dryingTableContainerID && tileEntity instanceof TileEntityDryingTable)
+        {
+            return new GuiDryingTable(player.inventory, world, (TileEntityDryingTable) tileEntity);
+        }
+        else if (id >= PSGuiHandler.fluidHandlerContainerID_DOWN
+            && id <= PSGuiHandler.fluidHandlerContainerID_EAST)
+        {
+            ForgeDirection direction = ForgeDirection.getOrientation(id - PSGuiHandler.fluidHandlerContainerID_DOWN);
+            if (tileEntity instanceof IFluidHandler)
+            {
+                return new GuiFluidHandler(player.inventory, tileEntity, (IFluidHandler) tileEntity, direction);
+            }
+        }
+        else if (id == PSGuiHandler.barrelContainerID && tileEntity instanceof TileEntityBarrel)
+        {
+            return new GuiBarrel(player.inventory, (TileEntityBarrel) tileEntity);
+        }
+        else if (id == PSGuiHandler.woodenVatContainerID && tileEntity instanceof TileEntityMashTub)
+        {
+            return new GuiWoodenVat(player.inventory, (TileEntityMashTub) tileEntity);
+        }
+        else if (id == PSGuiHandler.distilleryContainerID && tileEntity instanceof TileEntityDistillery)
+        {
+            return new GuiDistillery(player.inventory, (TileEntityDistillery) tileEntity);
+        }
+
+        return null;
     }
 }

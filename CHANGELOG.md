@@ -1,3 +1,37 @@
+# Fix dedicated-server packet handler loading
+
+## Fixed
+
+* Forge 1.7.10 constructs every SimpleImpl handler during common channel
+  registration, including handlers whose receiving side is `Side.CLIENT`. The two
+  client-bound handlers directly referenced `Minecraft.theWorld` (whose runtime
+  type is `WorldClient`), so constructing them while a dedicated server registered
+  the channel attempted to load a client-only class.
+* Both registered handlers are now common-only adapters. They copy each packet's
+  payload out of its Netty buffer and delegate primitive, string, and byte-array
+  data through `PSProxy`; `ClientProxy` sends that copied data through the existing
+  client-tick queue, while `ServerProxy` safely ignores impossible client-bound
+  delivery. Missing worlds, stale worlds, absent entities, unloaded blocks, and
+  unsupported partial-update targets continue to be rejected.
+* Client GUI construction and client Forge/FML event callbacks were also moved
+  behind client-proxy initialization. Common initialization no longer constructs
+  event handlers or exposes static handler fields that refer to client-only
+  Minecraft, Forge, rendering, shader, particle, or audio classes.
+
+## Compatibility
+
+* The `psychedelicraft` channel, packet discriminators 0 and 1, `Side.CLIENT`
+  receivers, wire formats, and multiplayer and integrated-server synchronization
+  paths are unchanged.
+* Changed files: `CHANGELOG.md`, `Psychedelicraft.java`, `PSProxy.java`,
+  `ClientProxy.java`, `ClientEventHandler.java`, `ClientPacketHandler.java`,
+  `ServerProxy.java`, `PSEventForgeHandler.java`, `PSEventFMLHandler.java`,
+  `PSGuiHandler.java`, `PacketExtendedEntityPropertiesDataHandler.java`, and
+  `PacketTileEntityDataHandler.java`.
+* The exact five-class Minecraft transformer allowlist and scoped OpenGL hooks
+  remain unchanged. Psychedelicraft still returns unapproved classes untouched
+  before ASM work and never modifies MC Heli or any other mod.
+
 # Restrict core transformations to approved Minecraft classes
 
 ## Transformer safety

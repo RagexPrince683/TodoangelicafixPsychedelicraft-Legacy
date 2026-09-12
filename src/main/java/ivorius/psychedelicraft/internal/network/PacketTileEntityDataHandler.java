@@ -13,11 +13,8 @@
 
 package ivorius.psychedelicraft.internal.network;
 
-import net.minecraft.tileentity.TileEntity;
-import net.minecraft.world.World;
-import net.minecraft.client.Minecraft;
+import ivorius.psychedelicraft.Psychedelicraft;
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 
 import cpw.mods.fml.common.network.simpleimpl.IMessage;
 import cpw.mods.fml.common.network.simpleimpl.IMessageHandler;
@@ -30,28 +27,12 @@ public class PacketTileEntityDataHandler implements IMessageHandler<PacketTileEn
 
     @Override
     public IMessage onMessage(PacketTileEntityData message, MessageContext ctx) {
-        final World world = Minecraft.getMinecraft().theWorld;
-        final int x = message.getX();
-        final int y = message.getY();
-        final int z = message.getZ();
-        final String context = message.getContext();
-        final ByteBuf payload = message.getPayload();
-        final byte[] payloadCopy = new byte[payload.readableBytes()];
+        ByteBuf payload = message.getPayload();
+        byte[] payloadCopy = new byte[payload.readableBytes()];
         payload.getBytes(payload.readerIndex(), payloadCopy);
 
-        ClientPacketQueue.enqueue(world, new Runnable() {
-            @Override
-            public void run() {
-                if (!world.blockExists(x, y, z)) {
-                    return;
-                }
-
-                TileEntity entity = world.getTileEntity(x, y, z);
-                if (entity instanceof PartialUpdateHandler) {
-                    ((PartialUpdateHandler) entity).readUpdateData(Unpooled.wrappedBuffer(payloadCopy), context);
-                }
-            }
-        });
+        Psychedelicraft.proxy.handleTileEntityData(message.getX(), message.getY(), message.getZ(),
+            message.getContext(), payloadCopy);
 
         return null;
     }
