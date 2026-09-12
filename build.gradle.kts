@@ -16,7 +16,7 @@ repositories {
     mavenCentral()
 }
 
-val NEXT_VERSION = "1.0.2"
+val NEXT_VERSION = "1.0.3"
 version = NEXT_VERSION
 
 tasks.withType<Jar>().configureEach {
