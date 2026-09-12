@@ -19,6 +19,7 @@ import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldInsnNode;
+import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 
@@ -85,6 +86,15 @@ public abstract class IvClassTransformer {
     }
 
     public byte[] transform(String actualClassName, String srgClassName, byte[] data, boolean obf) {
+        if (data == null) {
+            return null;
+        }
+
+        // Protect this secondary public entry point from bypassing the manager's gate.
+        if (!IvClassTransformerManager.isApprovedClass(srgClassName)) {
+            return data;
+        }
+
         ClassNode classNode = null;
         boolean didChange = false;
 
@@ -92,6 +102,10 @@ public abstract class IvClassTransformer {
             classNode = new ClassNode();
             ClassReader classReader = new ClassReader(data);
             classReader.accept(classNode, ClassReader.EXPAND_FRAMES);
+
+            if (hasTransformationMarker(classNode)) {
+                return data;
+            }
         } catch (Exception ex) {
             logger.error("Error patching class PRE " + actualClassName + " (" + srgClassName + ")!", ex);
             return data;
@@ -106,6 +120,7 @@ public abstract class IvClassTransformer {
 
         if (didChange) {
             try {
+                addTransformationMarker(classNode);
                 ClassWriter writer = new IvHierarchyClassWriter(
                     ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES,
                     classNode,
@@ -120,6 +135,32 @@ public abstract class IvClassTransformer {
         }
 
         return data;
+    }
+
+    private boolean hasTransformationMarker(ClassNode classNode) {
+        String markerName = getTransformationMarkerName();
+        for (FieldNode field : classNode.fields) {
+            if (markerName.equals(field.name)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void addTransformationMarker(ClassNode classNode) {
+        classNode.fields.add(new FieldNode(
+            org.objectweb.asm.Opcodes.ACC_PRIVATE
+                | org.objectweb.asm.Opcodes.ACC_STATIC
+                | org.objectweb.asm.Opcodes.ACC_FINAL
+                | org.objectweb.asm.Opcodes.ACC_SYNTHETIC,
+            getTransformationMarkerName(),
+            "Z",
+            null,
+            Integer.valueOf(1)));
+    }
+
+    private String getTransformationMarkerName() {
+        return "psychedelicraft$transformed$" + getClass().getSimpleName();
     }
 
     public abstract boolean transform(String className, ClassNode classNode, boolean obf);

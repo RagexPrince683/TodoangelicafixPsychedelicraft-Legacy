@@ -1,3 +1,43 @@
+# Restrict core transformations to approved Minecraft classes
+
+## Transformer safety
+
+* Added an exact `transformedName` allowlist at both bytecode transformation
+  entry points. Null bytecode still returns null, while a null or unapproved
+  transformed name returns the identical incoming byte-array object before ASM
+  parsing, instruction inspection, hierarchy lookup, or frame generation.
+* Removed the unrestricted `OpenGLTransfomer` registration. Its OpenGL state and
+  clear hooks now run, after each class-specific transformer, only for the same
+  five approved Minecraft classes. Both scoped and legacy general-transformer
+  paths remain behind the entry-point allowlist.
+* Added per-transformer synthetic markers so an approved class which is presented
+  to Psychedelicraft again is not given duplicate hooks. Transformations continue
+  from the incoming bytes, preserving changes installed earlier by other coremods.
+* Psychedelicraft no longer transforms MC Heli or any other mod's classes. It also
+  does not transform Forge, FML, LaunchWrapper, LWJGL, Java, or any unlisted
+  Minecraft class.
+
+## Remaining exact targets
+
+* `net.minecraft.client.renderer.EntityRenderer` remains necessary for world-pass,
+  camera, hand, overlay, fog, lightmap, sky, and render-state boundary hooks.
+* `net.minecraft.client.renderer.RenderGlobal` remains necessary for the
+  hallucination entity-rendering hook.
+* `net.minecraft.client.renderer.OpenGlHelper` remains necessary to mirror vanilla
+  blend-function and active-texture changes into Psychedelicraft's render state.
+* `net.minecraft.client.renderer.RenderHelper` remains necessary to mirror
+  vanilla standard item-lighting changes.
+* `net.minecraft.client.audio.SoundManager` remains necessary for drug-related
+  sound-volume adjustment.
+
+## Visual limitation
+
+* OpenGL calls made inside other mods and unlisted vanilla classes are no longer
+  observed. Psychedelicraft's normal hooks in the five approved classes remain,
+  but shader render-state mirroring cannot react to third-party rendering changes;
+  unusual third-party render paths may therefore have less accurate psychedelic
+  compositing. No effect may depend on intercepting another mod's rendering.
+
 # Diagnose remaining Ragecraft renderWorld transformation report
 
 ## Transformer diagnostics and failure reporting

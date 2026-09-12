@@ -27,6 +27,23 @@ These implementations live under `ivorius.psychedelicraft.internal`; no
 their original Apache-2.0 notices. There is no intentional packet compatibility
 change.
 
+## Core transformer scope
+
+Psychedelicraft only transforms these exact Minecraft classes:
+
+* `net.minecraft.client.renderer.EntityRenderer` for world-pass, camera, hand,
+  overlay, fog, lightmap, sky, and render-state boundary hooks.
+* `net.minecraft.client.renderer.RenderGlobal` for hallucination entity rendering.
+* `net.minecraft.client.renderer.OpenGlHelper` for blend and active-texture state.
+* `net.minecraft.client.renderer.RenderHelper` for standard item-lighting state.
+* `net.minecraft.client.audio.SoundManager` for drug-related sound volume.
+
+It does not transform MC Heli or any other mod. OpenGL calls made inside other
+mods or unlisted vanilla classes are deliberately not intercepted. Consequently,
+unusual third-party render paths may have less accurate psychedelic shader
+compositing because their render-state changes are not mirrored; normal effects
+using the approved vanilla hooks remain available.
+
 ## Quick guide:
 
 Requires: [Gradle](https://gradle.org) and a Java 17 or 21 JDK to run the modern
