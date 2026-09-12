@@ -19,6 +19,10 @@ repositories {
 val NEXT_VERSION = "1.0.2"
 version = NEXT_VERSION
 
+tasks.withType<Jar>().configureEach {
+    manifest.attributes["Implementation-Version"] = project.version.toString()
+}
+
 fun getGitHash(): String {
     return try {
         org.eclipse.jgit.lib.RepositoryBuilder()

@@ -227,15 +227,15 @@ public class EntityRendererTransformer extends IvClassTransformerClass
                 return true;
             }
 
-            logDisabledRenderHandFeature(className, methodID, methodNode, "duplicate-hook pairing");
-            return true;
+            logRenderHandTransformationFailure(className, methodID, methodNode, "duplicate-hook pairing");
+            return false;
         }
 
         MethodInsnNode renderHandCall = findRenderHandCall(methodNode);
         if (renderHandCall == null)
         {
-            logDisabledRenderHandFeature(className, methodID, methodNode, "renderHand call");
-            return true;
+            logRenderHandTransformationFailure(className, methodID, methodNode, "renderHand call");
+            return false;
         }
 
         AbstractInsnNode renderPass = previousExecutable(renderHandCall);
@@ -246,18 +246,18 @@ public class EntityRendererTransformer extends IvClassTransformerClass
 
         if (!isRenderHandOperands(renderer, partialTicks, renderPass))
         {
-            logDisabledRenderHandFeature(className, methodID, methodNode, "renderHand operand stack");
-            return true;
+            logRenderHandTransformationFailure(className, methodID, methodNode, "renderHand operand stack");
+            return false;
         }
         if (!isSupportedDepthClear(depthClearCall))
         {
-            logDisabledRenderHandFeature(className, methodID, methodNode, "hand depth-clear call");
-            return true;
+            logRenderHandTransformationFailure(className, methodID, methodNode, "hand depth-clear call");
+            return false;
         }
         if (!isIntegerConstant(clearMask) || integerConstant(clearMask) != 0x100)
         {
-            logDisabledRenderHandFeature(className, methodID, methodNode, "hand depth-clear mask");
-            return true;
+            logRenderHandTransformationFailure(className, methodID, methodNode, "hand depth-clear mask");
+            return false;
         }
 
         LabelNode skipDepthClear = new LabelNode();
@@ -345,14 +345,14 @@ public class EntityRendererTransformer extends IvClassTransformerClass
         return false;
     }
 
-    private void logDisabledRenderHandFeature(String className, String methodID, MethodNode methodNode, String stage)
+    private void logRenderHandTransformationFailure(String className, String methodID, MethodNode methodNode, String stage)
     {
-        logger.warn("Disabled hand depth effect: class=" + className
+        logger.warn("Rejected incomplete hand depth-effect transformation: class=" + className
             + ", method=" + methodNode.name + methodNode.desc
             + ", hook=" + methodID
             + ", failedMatchStage=" + stage
             + ", unmatchedInstructionPattern=GL_DEPTH_BUFFER_BIT; INVOKESTATIC {GL11|Angelica GLStateManager}.glClear(I)V; ALOAD 0; FLOAD 1; ILOAD n; {INVOKESPECIAL|INVOKEVIRTUAL} EntityRenderer.renderHand(FI)V"
-            + ". The renderer was left unchanged for this hook.");
+            + ". The required transformation will restore the original renderer bytecode rather than install an unpaired hook.");
     }
 
     private static boolean isIntegerConstant(AbstractInsnNode node)
