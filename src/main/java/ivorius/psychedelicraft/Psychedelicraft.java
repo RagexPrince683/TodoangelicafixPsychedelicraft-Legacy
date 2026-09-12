@@ -60,9 +60,7 @@ public class Psychedelicraft
 
     public static SimpleNetworkWrapper network;
 
-    public static PSCoreHandlerClient coreHandlerClient;
     public static PSCoreHandlerCommon coreHandlerCommon;
-    public static PSCoreHandlerServer coreHandlerServer;
 
     public static CreativeTabPsyche creativeTab;
     public static CreativeTabPsyche drinksTab;

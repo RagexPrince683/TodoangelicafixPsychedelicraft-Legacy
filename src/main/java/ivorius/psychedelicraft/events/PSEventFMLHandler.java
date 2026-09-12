@@ -5,7 +5,6 @@
 
 package ivorius.psychedelicraft.events;
 
-import cpw.mods.fml.client.event.ConfigChangedEvent;
 import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.event.FMLInterModComms;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
@@ -14,9 +13,6 @@ import cpw.mods.fml.common.gameevent.TickEvent;
 import ivorius.psychedelicraft.Psychedelicraft;
 import ivorius.psychedelicraft.achievements.PSAchievementList;
 import ivorius.psychedelicraft.blocks.PSBlocks;
-import ivorius.psychedelicraft.client.rendering.DrugEffectInterpreter;
-import ivorius.psychedelicraft.client.rendering.SmoothCameraHelper;
-import ivorius.psychedelicraft.client.rendering.shaders.PSRenderStates;
 import ivorius.psychedelicraft.config.PSConfig;
 import ivorius.psychedelicraft.crafting.RecipeActionRegistry;
 import ivorius.psychedelicraft.entities.EntityRealityRift;
@@ -24,7 +20,6 @@ import ivorius.psychedelicraft.entities.drugs.DrugProperties;
 import ivorius.psychedelicraft.fluids.PSFluids;
 import ivorius.psychedelicraft.gui.UpdatableContainer;
 import ivorius.psychedelicraft.items.PSItems;
-import net.minecraft.client.Minecraft;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.inventory.Container;
 import net.minecraft.inventory.InventoryCrafting;
@@ -77,15 +72,6 @@ public class PSEventFMLHandler
             }
         }
 
-        if (event.type == TickEvent.Type.CLIENT && event.phase == TickEvent.Phase.START)
-        {
-            PSRenderStates.update();
-        }
-
-        if (event.type == TickEvent.Type.RENDER && event.phase == TickEvent.Phase.START)
-        {
-            PSBlocks.psycheLeaves.setGraphicsLevel(Minecraft.getMinecraft().gameSettings.fancyGraphics);
-        }
     }
 
     @SubscribeEvent
@@ -113,37 +99,6 @@ public class PSEventFMLHandler
                 if (container instanceof UpdatableContainer)
                     ((UpdatableContainer) container).updateAsCustomContainer();
             }
-        }
-    }
-
-    @SubscribeEvent
-    public void onClientTick(TickEvent.ClientTickEvent event)
-    {
-        if (event.phase == TickEvent.Phase.START)
-        {
-            Minecraft mc = Minecraft.getMinecraft();
-
-            if (mc != null && !mc.isGamePaused())
-            {
-                DrugProperties drugProperties = DrugProperties.getDrugProperties(mc.renderViewEntity);
-
-                if (drugProperties != null)
-                {
-                    SmoothCameraHelper.instance.update(mc.gameSettings.mouseSensitivity, DrugEffectInterpreter.getSmoothVision(drugProperties));
-                }
-            }
-        }
-    }
-
-    @SubscribeEvent
-    public void onConfigChanged(ConfigChangedEvent event)
-    {
-        if (event instanceof ConfigChangedEvent.OnConfigChangedEvent && event.modID.equals(Psychedelicraft.MODID))
-        {
-            PSConfig.loadConfig(event.configID);
-
-            if (Psychedelicraft.config.hasChanged())
-                Psychedelicraft.config.save();
         }
     }
 

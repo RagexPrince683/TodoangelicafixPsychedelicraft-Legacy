@@ -13,12 +13,8 @@
 
 package ivorius.psychedelicraft.internal.network;
 
-import net.minecraft.entity.Entity;
-import net.minecraft.world.World;
-import net.minecraft.client.Minecraft;
+import ivorius.psychedelicraft.Psychedelicraft;
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
-import net.minecraftforge.common.IExtendedEntityProperties;
 
 import cpw.mods.fml.common.network.simpleimpl.IMessage;
 import cpw.mods.fml.common.network.simpleimpl.IMessageHandler;
@@ -32,28 +28,12 @@ public class PacketExtendedEntityPropertiesDataHandler
 
     @Override
     public IMessage onMessage(PacketExtendedEntityPropertiesData message, MessageContext ctx) {
-        final World world = Minecraft.getMinecraft().theWorld;
-        final int entityID = message.getEntityID();
-        final String eepKey = message.getEepKey();
-        final String context = message.getContext();
-        final ByteBuf payload = message.getPayload();
-        final byte[] payloadCopy = new byte[payload.readableBytes()];
+        ByteBuf payload = message.getPayload();
+        byte[] payloadCopy = new byte[payload.readableBytes()];
         payload.getBytes(payload.readerIndex(), payloadCopy);
 
-        ClientPacketQueue.enqueue(world, new Runnable() {
-            @Override
-            public void run() {
-                Entity entity = world.getEntityByID(entityID);
-                if (entity == null || entity.worldObj != world) {
-                    return;
-                }
-
-                IExtendedEntityProperties properties = entity.getExtendedProperties(eepKey);
-                if (properties instanceof PartialUpdateHandler) {
-                    ((PartialUpdateHandler) properties).readUpdateData(Unpooled.wrappedBuffer(payloadCopy), context);
-                }
-            }
-        });
+        Psychedelicraft.proxy.handleExtendedEntityPropertiesData(message.getEntityID(), message.getEepKey(),
+            message.getContext(), payloadCopy);
 
         return null;
     }
