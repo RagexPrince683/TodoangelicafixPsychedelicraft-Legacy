@@ -18,6 +18,7 @@ import net.minecraft.client.Minecraft;
 public class WrapperBlur extends ShaderWrapper<ShaderBlur>
 {
     private double guiBackgroundBlur;
+    private boolean drugBlurActive;
 
     public WrapperBlur(String utils)
     {
@@ -32,16 +33,24 @@ public class WrapperBlur extends ShaderWrapper<ShaderBlur>
         if (drugProperties != null)
         {
             shaderInstance.vBlur = drugProperties.getDrugValue("Power");
+            drugBlurActive = shaderInstance.vBlur > 0.0f;
             shaderInstance.hBlur = 0.0f;
         }
         else
         {
             shaderInstance.vBlur = 0.0f;
             shaderInstance.hBlur = 0.0f;
+            drugBlurActive = false;
         }
 
         shaderInstance.vBlur += ClientProxy.pauseMenuBlur * guiBackgroundBlur * guiBackgroundBlur * guiBackgroundBlur;
         shaderInstance.hBlur += ClientProxy.pauseMenuBlur * guiBackgroundBlur * guiBackgroundBlur * guiBackgroundBlur;
+    }
+
+    @Override
+    protected boolean isDrugShaderActive(float partialTicks, int ticks)
+    {
+        return drugBlurActive;
     }
 
     @Override

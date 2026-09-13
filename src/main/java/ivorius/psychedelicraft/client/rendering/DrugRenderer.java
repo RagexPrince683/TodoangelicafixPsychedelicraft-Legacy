@@ -87,11 +87,6 @@ public class DrugRenderer implements IDrugRenderer
             experiencedHealth = IvMathHelper.nearValue(experiencedHealth, entity.getHealth(), 0.01f, 0.01f);
         }
 
-        if (PSRenderStates.sunFlareIntensity > 0.0f)
-        {
-            effectLensFlare.updateLensFlares();
-        }
-
         Block bID = ActiveRenderInfo.getBlockAtEntityViewpoint(entity.worldObj, entity, 1.0F);
         wasInWater = bID.getMaterial() == Material.water;
         //wasInRain = player.worldObj.getRainStrength(1.0f) > 0.0f && player.worldObj.getPrecipitationHeight(MathHelper.floor_double(player.posX), MathHelper.floor_double(player.posY)) <= player.posY; //Client can't handle rain
@@ -153,6 +148,15 @@ public class DrugRenderer implements IDrugRenderer
     public void renderOverlaysBeforeShaders(float partialTicks, EntityLivingBase entity, int updateCounter, int width, int height, DrugProperties drugProperties)
     {
         effectLensFlare.sunFlareIntensity = PSRenderStates.sunFlareIntensity;
+
+        if (PSRenderStates.hasActiveDrugShader())
+        {
+            // Angelica composes these shaders after the world, so flares cannot safely share that frame.
+            effectLensFlare.suppress();
+            return;
+        }
+
+        effectLensFlare.updateLensFlares();
 
         if (effectLensFlare.shouldApply(updateCounter + partialTicks))
         {

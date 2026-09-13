@@ -55,6 +55,12 @@ public class WrapperHeatDistortion extends ShaderWrapper<ShaderHeatDistortions>
     }
 
     @Override
+    protected boolean isDrugShaderActive(float partialTicks, int ticks)
+    {
+        return false;
+    }
+
+    @Override
     public boolean wantsDepthBuffer(float partialTicks)
     {
         DrugProperties drugProperties = DrugProperties.getDrugProperties(Minecraft.getMinecraft().renderViewEntity);

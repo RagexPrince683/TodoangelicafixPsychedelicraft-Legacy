@@ -55,6 +55,12 @@ public class WrapperWaterOverlay extends ShaderWrapper<ShaderDistortionMap>
     }
 
     @Override
+    protected boolean isDrugShaderActive(float partialTicks, int ticks)
+    {
+        return false;
+    }
+
+    @Override
     public boolean wantsDepthBuffer(float partialTicks)
     {
         return false;

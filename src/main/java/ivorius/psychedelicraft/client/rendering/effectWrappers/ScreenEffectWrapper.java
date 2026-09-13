@@ -16,6 +16,7 @@ import net.minecraft.client.Minecraft;
 public abstract class ScreenEffectWrapper<ScreenEffect extends Iv2DScreenEffect> implements EffectWrapper
 {
     public ScreenEffect screenEffect;
+    private boolean preparedToApply;
 
     protected ScreenEffectWrapper(ScreenEffect screenEffect)
     {
@@ -35,21 +36,33 @@ public abstract class ScreenEffectWrapper<ScreenEffect extends Iv2DScreenEffect>
     }
 
     @Override
-    public void apply(float partialTicks, IvOpenGLTexturePingPong pingPong, IvDepthBuffer depthBuffer)
+    public void prepare(float partialTicks, IvDepthBuffer depthBuffer)
     {
         Minecraft mc = Minecraft.getMinecraft();
         int ticks = mc.ingameGUI.getUpdateCounter();
 
         setScreenEffectValues(partialTicks, ticks);
+        preparedToApply = screenEffect.shouldApply(ticks + partialTicks);
+    }
 
-        if (screenEffect.shouldApply(ticks + partialTicks))
+    @Override
+    public void apply(float partialTicks, IvOpenGLTexturePingPong pingPong, IvDepthBuffer depthBuffer)
+    {
+        if (preparedToApply)
         {
+            int ticks = Minecraft.getMinecraft().ingameGUI.getUpdateCounter();
             screenEffect.apply(
                 pingPong.getScreenWidth(),
                 pingPong.getScreenHeight(),
                 ticks + partialTicks,
                 pingPong);
         }
+    }
+
+    @Override
+    public boolean isActiveDrugShader()
+    {
+        return false;
     }
 
     public abstract void setScreenEffectValues(float partialTicks, int ticks);

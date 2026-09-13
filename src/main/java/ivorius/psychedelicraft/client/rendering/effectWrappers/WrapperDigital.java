@@ -15,6 +15,7 @@ public class WrapperDigital implements EffectWrapper
 {
     public WrapperDigitalMD digitalMD;
     public WrapperDigitalPD digitalPD;
+    private ShaderWrapper<?> preparedWrapper;
 
     public WrapperDigital(String utils)
     {
@@ -44,12 +45,26 @@ public class WrapperDigital implements EffectWrapper
     }
 
     @Override
-    public void apply(float partialTicks, IvOpenGLTexturePingPong pingPong, IvDepthBuffer depthBuffer)
+    public void prepare(float partialTicks, IvDepthBuffer depthBuffer)
     {
         if (depthBuffer != null)
-            digitalPD.apply(partialTicks, pingPong, depthBuffer);
+            preparedWrapper = digitalPD;
         else
-            digitalMD.apply(partialTicks, pingPong, depthBuffer);
+            preparedWrapper = digitalMD;
+
+        preparedWrapper.prepare(partialTicks, depthBuffer);
+    }
+
+    @Override
+    public void apply(float partialTicks, IvOpenGLTexturePingPong pingPong, IvDepthBuffer depthBuffer)
+    {
+        preparedWrapper.apply(partialTicks, pingPong, depthBuffer);
+    }
+
+    @Override
+    public boolean isActiveDrugShader()
+    {
+        return preparedWrapper != null && preparedWrapper.isActiveDrugShader();
     }
 
     @Override

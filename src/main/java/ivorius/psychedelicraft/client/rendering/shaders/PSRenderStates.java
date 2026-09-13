@@ -59,6 +59,9 @@ public class PSRenderStates
 
     public static boolean renderFakeSkybox = true;
 
+    private static boolean activeDrugShader;
+    private static boolean shaderFramePrepared;
+
     private static boolean glLightEnabled;
     private static boolean glLight0Valid;
     private static float glLight0X;
@@ -502,10 +505,44 @@ public class PSRenderStates
         apply2DShaders(ticks, partialTicks);
     }
 
+    public static void prepare2DShaders(float partialTicks)
+    {
+        activeDrugShader = false;
+        shaderFramePrepared = true;
+
+        if (!shader2DEnabled || realtimePingPong == null)
+        {
+            return;
+        }
+
+        IvDepthBuffer availableDepthBuffer = didDepthPass ? depthBuffer : null;
+        for (EffectWrapper effectWrapper : effectWrappers)
+        {
+            effectWrapper.prepare(partialTicks, availableDepthBuffer);
+            if (effectWrapper.isActiveDrugShader())
+            {
+                activeDrugShader = true;
+            }
+        }
+    }
+
+    public static boolean hasActiveDrugShader()
+    {
+        return shaderFramePrepared && activeDrugShader;
+    }
+
     public static void apply2DShaders(float ticks, float partialTicks)
     {
         if (!shader2DEnabled || realtimePingPong == null)
+        {
+            shaderFramePrepared = false;
             return;
+        }
+
+        if (!shaderFramePrepared)
+        {
+            prepare2DShaders(partialTicks);
+        }
 
         Minecraft mc = Minecraft.getMinecraft();
 
@@ -548,6 +585,7 @@ public class PSRenderStates
         finally
         {
             state.restore();
+            shaderFramePrepared = false;
         }
 
         //IvOpenGLHelper.checkGLError(Psychedelicraft.logger, "2D Shaders");
@@ -591,6 +629,8 @@ public class PSRenderStates
         for (EffectWrapper effectWrapper : effectWrappers)
             effectWrapper.dealloc();
         effectWrappers.clear();
+        activeDrugShader = false;
+        shaderFramePrepared = false;
 
         if (depthBuffer != null)
             depthBuffer.deallocate();
