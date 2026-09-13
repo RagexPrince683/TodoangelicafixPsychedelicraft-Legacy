@@ -1,3 +1,56 @@
+# Fix Psychedelicraft rendering with Angelica
+
+## Fixed
+
+* Psychedelicraft now captures the framebuffer that is actually bound when its
+  post-processing begins instead of assuming that Minecraft's main framebuffer
+  is still Angelica's active render target. The tobacco desaturation pass and the
+  other 2D drug shaders consequently copy from, render into, and return to the
+  correct target rather than sampling incomplete or stale output.
+* Screen post-processing and lens flares now restore the prior framebuffer,
+  shader program, active texture unit, texture/blend/depth/alpha/color state,
+  client-array state, viewport, and model-view/projection/texture matrices. The
+  explicit object-binding restoration keeps Angelica's tracked GL state in sync;
+  the same path falls back to vanilla `OpenGlHelper` when Angelica is absent.
+* Lens flares reject missing worlds and cameras, invalid screen sizes, invisible
+  effects, behind-camera/invalid projections, and duplicate calls for the same
+  rendered frame. Existing `ResourceLocation` and texture-manager allocations
+  remain cached, while world-dependent visibility state is discarded on a world
+  change or effect destruction.
+* Corrected the flare-alpha expression so the central flare selection no longer
+  accidentally compares `alpha * index` with `8`, which caused unstable flare
+  brightness under drug effects.
+* Removed the alcohol effect's Nether portal texture overlay. Camera wobble,
+  double vision, motion blur, poisoning, and every unrelated drug shader remain
+  unchanged.
+
+## Angelica compatibility audit
+
+* Psychedelicraft has no compile-time dependency on Angelica APIs. Its only direct
+  Angelica reference is the existing ASM instruction-owner allowlist for
+  `com.gtnewhorizons.angelica.glsm.GLStateManager.glClear(int)`; that class and
+  method are present in the locally included Angelica revision.
+* The included Angelica source replaces Minecraft framebuffer depth renderbuffers
+  with depth textures, tracks framebuffer/program/texture state through GLSM, and
+  can keep a pipeline-owned framebuffer bound while world rendering runs. It does
+  not expose a stable Forge 1.7.10 API for inserting Psychedelicraft's legacy 2D
+  effects. The fix therefore uses the live OpenGL binding plus Minecraft's
+  `OpenGlHelper` dispatch, which Angelica redirects through its existing
+  `GLStateManagerService` and which remains the original vanilla-compatible path
+  without Angelica.
+* No Angelica source, global performance option, unrelated mod, mixin target, or
+  transformer target was changed. Psychedelicraft's transformer allowlist remains
+  limited to its five existing Minecraft classes and does not include MCHELI.
+
+## Resource and lifecycle behavior
+
+* Lens flares continue to use the texture manager's cached textures and allocate
+  no textures, framebuffers, or display lists per frame. Their bounded projection
+  and visibility values are reset when the world changes.
+* Shader programs, ping-pong textures, and depth/framebuffer resources continue
+  to be released and recreated by the existing resource-reload lifecycle. No
+  rendering class was moved into common or dedicated-server initialization.
+
 # Fix dedicated-server packet handler loading
 
 ## Fixed
