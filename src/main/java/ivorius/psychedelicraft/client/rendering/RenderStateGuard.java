@@ -4,6 +4,9 @@ import net.minecraft.client.renderer.OpenGlHelper;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GLContext;
+import org.lwjgl.BufferUtils;
+
+import java.nio.IntBuffer;
 
 /**
  * Saves the compatibility-profile state touched by Psychedelicraft's screen effects.
@@ -22,12 +25,26 @@ public final class RenderStateGuard
     private static final int GL_READ_FRAMEBUFFER_BINDING = 0x8CAA;
     private static final int GL_TEXTURE_BINDING_2D = 0x8069;
     private static final int TRACKED_TEXTURE_UNITS = 4;
+    private static final ThreadLocal<IntBuffer> VIEWPORT_BUFFER = new ThreadLocal<IntBuffer>()
+    {
+        @Override
+        protected IntBuffer initialValue()
+        {
+            return BufferUtils.createIntBuffer(4);
+        }
+    };
 
     private final int activeTexture;
     private final int drawFramebuffer;
     private final int readFramebuffer;
     private final int matrixMode;
     private final int program;
+    private final int drawBuffer;
+    private final int readBuffer;
+    private final int viewportX;
+    private final int viewportY;
+    private final int viewportWidth;
+    private final int viewportHeight;
     private final int[] textureBindings = new int[TRACKED_TEXTURE_UNITS];
     private boolean restored;
 
@@ -38,6 +55,16 @@ public final class RenderStateGuard
         readFramebuffer = getBoundReadFramebuffer();
         matrixMode = GL11.glGetInteger(GL11.GL_MATRIX_MODE);
         program = GL11.glGetInteger(GL20.GL_CURRENT_PROGRAM);
+        drawBuffer = GL11.glGetInteger(GL11.GL_DRAW_BUFFER);
+        readBuffer = GL11.glGetInteger(GL11.GL_READ_BUFFER);
+
+        IntBuffer viewport = VIEWPORT_BUFFER.get();
+        viewport.clear();
+        GL11.glGetInteger(GL11.GL_VIEWPORT, viewport);
+        viewportX = viewport.get(0);
+        viewportY = viewport.get(1);
+        viewportWidth = viewport.get(2);
+        viewportHeight = viewport.get(3);
 
         for (int unit = 0; unit < TRACKED_TEXTURE_UNITS; unit++)
         {
@@ -125,6 +152,36 @@ public final class RenderStateGuard
     public static boolean supportsSeparateFramebufferBindings()
     {
         return GLContext.getCapabilities().OpenGL30;
+    }
+
+    public int getDrawBuffer()
+    {
+        return drawBuffer;
+    }
+
+    public int getReadBuffer()
+    {
+        return readBuffer;
+    }
+
+    public int getViewportX()
+    {
+        return viewportX;
+    }
+
+    public int getViewportY()
+    {
+        return viewportY;
+    }
+
+    public int getViewportWidth()
+    {
+        return viewportWidth;
+    }
+
+    public int getViewportHeight()
+    {
+        return viewportHeight;
     }
 
     private static void pushMatrix(int mode)

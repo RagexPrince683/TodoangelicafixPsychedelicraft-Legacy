@@ -10,8 +10,10 @@ Psychedelicraft's screen effects preserve the framebuffer, shader, viewport,
 matrix, texture-unit, texture-binding, blend, depth, alpha, and color state that
 was active when each effect began. The post-processing pipeline uses reusable
 ping-pong targets and keeps distinct framebuffer read/draw ownership intact on
-OpenGL 3.0 renderers. Lens flares use the live camera matrices for each rendered
-view and do not require an active shaderpack.
+OpenGL 3.0 renderers. Scene capture explicitly reads the framebuffer containing
+the completed world rather than an independently bound stale read target. Lens
+flares use matrices captured during the normal pre-sky world stage for the same
+render-view entity, and do not require an active shaderpack.
 
 The `REFERENCEFOLDER/AngelicaSRC` tree is audit-only and is not compiled, bundled,
 or modified as an Angelica repair. Runtime testing should include Angelica with

@@ -17,7 +17,11 @@ import net.minecraft.util.Vec3;
 import org.lwjgl.util.vector.Matrix4f;
 import org.lwjgl.util.vector.Vector3f;
 import org.lwjgl.util.vector.Vector4f;
+import org.lwjgl.BufferUtils;
+import org.lwjgl.opengl.GL11;
 
+import java.nio.FloatBuffer;
+import java.nio.IntBuffer;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
@@ -27,6 +31,82 @@ import java.lang.reflect.Method;
 public class PsycheMatrixHelper
 {
     private static Method getFOVMethod;
+    private static final FloatBuffer MATRIX_BUFFER = BufferUtils.createFloatBuffer(16);
+    private static final IntBuffer VIEWPORT_BUFFER = BufferUtils.createIntBuffer(16);
+    private static final Matrix4f capturedModelView = new Matrix4f();
+    private static final Matrix4f capturedProjection = new Matrix4f();
+    private static final int[] capturedViewport = new int[4];
+    private static Entity capturedViewEntity;
+    private static boolean hasCapturedWorldView;
+
+    /** Captures the camera-relative matrices while Minecraft is rendering the normal world view. */
+    public static void captureCurrentWorldView(Entity viewEntity)
+    {
+        MATRIX_BUFFER.clear();
+        GL11.glGetFloat(GL11.GL_MODELVIEW_MATRIX, MATRIX_BUFFER);
+        capturedModelView.load(MATRIX_BUFFER);
+
+        MATRIX_BUFFER.clear();
+        GL11.glGetFloat(GL11.GL_PROJECTION_MATRIX, MATRIX_BUFFER);
+        capturedProjection.load(MATRIX_BUFFER);
+
+        VIEWPORT_BUFFER.clear();
+        GL11.glGetInteger(GL11.GL_VIEWPORT, VIEWPORT_BUFFER);
+        for (int index = 0; index < capturedViewport.length; index++)
+        {
+            capturedViewport[index] = VIEWPORT_BUFFER.get(index);
+        }
+
+        capturedViewEntity = viewEntity;
+        hasCapturedWorldView = true;
+    }
+
+    public static void invalidateCapturedWorldView()
+    {
+        hasCapturedWorldView = false;
+        capturedViewEntity = null;
+    }
+
+    /**
+     * Projects a camera-relative direction with the matrices captured for this exact view.
+     * The returned x/y values use the top-left overlay coordinate system.
+     */
+    public static Vector3f projectDirectionCurrentView(Entity viewEntity, Vector3f direction,
+                                                       int overlayHeight)
+    {
+        if (!hasCapturedWorldView || capturedViewEntity != viewEntity
+            || capturedViewport[2] <= 0 || capturedViewport[3] <= 0)
+        {
+            return null;
+        }
+
+        Vector4f eyePoint = Matrix4f.transform(
+            capturedModelView,
+            new Vector4f(direction.x, direction.y, direction.z, 1.0f),
+            null);
+        Vector4f clipPoint = Matrix4f.transform(capturedProjection, eyePoint, null);
+
+        if (clipPoint.w <= 0.00001f)
+        {
+            return null;
+        }
+
+        float inverseW = 1.0f / clipPoint.w;
+        float normalizedX = clipPoint.x * inverseW;
+        float normalizedY = clipPoint.y * inverseW;
+        float normalizedZ = clipPoint.z * inverseW;
+        if (normalizedZ < -1.0f || normalizedZ > 1.0f)
+        {
+            return null;
+        }
+
+        float viewportPixelX = (normalizedX * 0.5f + 0.5f) * capturedViewport[2];
+        float viewportPixelY = (normalizedY * 0.5f + 0.5f) * capturedViewport[3];
+        return new Vector3f(
+            capturedViewport[0] + viewportPixelX,
+            overlayHeight - (capturedViewport[1] + viewportPixelY),
+            normalizedZ * 0.5f + 0.5f);
+    }
 
     public static Matrix4f getCurrentProjectionMatrix(float partialTicks)
     {

@@ -39,6 +39,10 @@ public class IvOpenGLTexturePingPong {
 
     private int parentDrawFrameBuffer;
     private int parentReadFrameBuffer;
+    private int parentDrawBuffer;
+    private int parentReadBuffer;
+    private int sourceViewportX;
+    private int sourceViewportY;
 
     private boolean useFramebuffer;
 
@@ -138,6 +142,16 @@ public class IvOpenGLTexturePingPong {
         this.parentReadFrameBuffer = Math.max(readFrameBuffer, 0);
     }
 
+    public void setParentBuffers(int drawBuffer, int readBuffer) {
+        this.parentDrawBuffer = drawBuffer;
+        this.parentReadBuffer = readBuffer;
+    }
+
+    public void setSourceViewportOrigin(int x, int y) {
+        this.sourceViewportX = x;
+        this.sourceViewportY = y;
+    }
+
     public int getParentFrameBuffer() {
         return this.parentDrawFrameBuffer;
     }
@@ -156,7 +170,10 @@ public class IvOpenGLTexturePingPong {
                 activeBuffer = 0;
                 bindCurrentTexture();
 
-                glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, screenWidth, screenHeight);
+                bindSceneForReading();
+                glCopyTexSubImage2D(
+                    GL_TEXTURE_2D, 0, 0, 0,
+                    sourceViewportX, sourceViewportY, screenWidth, screenHeight);
 
                 OpenGlHelper.func_153171_g(OpenGlHelper.field_153198_e, pingPongFB);
                 glPushAttrib(GL_VIEWPORT_BIT | GL_COLOR_BUFFER_BIT);
@@ -171,13 +188,18 @@ public class IvOpenGLTexturePingPong {
             // glReadBuffer(activeBuffer == 0 ? GL_COLOR_ATTACHMENT0_EXT : GL_COLOR_ATTACHMENT1_EXT);
 
             glViewport(0, 0, screenWidth, screenHeight);
+            prepareFullScreenOutput();
             // glClearColor(1.0f, 1.0f, 1.0f, 0.0f);
             // glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             // IvOpenGLHelper.setUpOpenGLStandard2D(screenWidth, screenHeight);
         } else // Use direct draw workaround
         {
             glBindTexture(GL_TEXTURE_2D, cacheTextures[0]);
-            glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, screenWidth, screenHeight);
+            bindSceneForReading();
+            glCopyTexSubImage2D(
+                GL_TEXTURE_2D, 0, 0, 0,
+                sourceViewportX, sourceViewportY, screenWidth, screenHeight);
+            bindParentFrameBuffers();
         }
     }
 
@@ -186,18 +208,25 @@ public class IvOpenGLTexturePingPong {
         glBindTexture(GL_TEXTURE_2D, cacheTextures[activeBuffer]);
     }
 
-    public void postTick() {
+    public void postTick(boolean composeResult) {
         if (setupRealtimeFB && setupCacheTextureForTick) {
             // glDrawBuffer(GL_BACK);
             // glReadBuffer(GL_BACK);
             glPopAttrib();
             bindParentFrameBuffers();
+            glDrawBuffer(parentDrawBuffer);
+            glReadBuffer(parentReadBuffer);
+
+            if (!composeResult) {
+                setupCacheTextureForTick = false;
+                return;
+            }
 
             activeBuffer = 1 - activeBuffer;
-
             glColor3f(1.0f, 1.0f, 1.0f);
             bindCurrentTexture();
             IvRenderHelper.drawRectFullScreen(screenWidth, screenHeight);
+            setupCacheTextureForTick = false;
         }
     }
 
@@ -208,6 +237,27 @@ public class IvOpenGLTexturePingPong {
         } else {
             OpenGlHelper.func_153171_g(OpenGlHelper.field_153198_e, parentDrawFrameBuffer);
         }
+    }
+
+    private void bindSceneForReading() {
+        if (RenderStateGuard.supportsSeparateFramebufferBindings()) {
+            // The completed scene belongs to the draw framebuffer.  The independently
+            // bound read framebuffer may still refer to an earlier Angelica pass.
+            OpenGlHelper.func_153171_g(0x8CA8, parentDrawFrameBuffer);
+        } else {
+            OpenGlHelper.func_153171_g(OpenGlHelper.field_153198_e, parentDrawFrameBuffer);
+        }
+
+        glReadBuffer(parentDrawBuffer);
+    }
+
+    private void prepareFullScreenOutput() {
+        glDisable(GL_SCISSOR_TEST);
+        glDisable(GL_DEPTH_TEST);
+        glDisable(GL_STENCIL_TEST);
+        glDisable(GL_BLEND);
+        glDepthMask(false);
+        glColorMask(true, true, true, true);
     }
 
     public void destroy() {
