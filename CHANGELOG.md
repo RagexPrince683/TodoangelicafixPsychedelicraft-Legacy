@@ -1,3 +1,82 @@
+# Fix rendering corruption and lens flare flicker
+
+## Fixed
+
+* The 2D ping-pong pipeline now selects texture unit zero explicitly before
+  capturing, sampling, and composing a world frame. This prevents a texture unit
+  left active by another renderer from making a scene shader sample an unrelated
+  texture, including a flare image or a render-target texture.
+* Read and draw framebuffer ownership is tracked separately where OpenGL 3.0 is
+  available. Psychedelicraft restores both incoming bindings after intermediate
+  rendering and composes only into the incoming draw framebuffer, rather than
+  replacing Angelica's read binding with a guessed common binding.
+* The render guard explicitly snapshots and restores the 2D bindings on texture
+  units zero through three, in addition to the shader, framebuffer, viewport,
+  matrices, and fixed-function attributes. These are every unit used by the
+  affected Psychedelicraft 2D shaders, and restoration goes through Minecraft's
+  redirected OpenGL helpers so Angelica's GLSM cache observes the changes.
+* Lens flares now project the sun through the live model-view, projection, and
+  viewport of the view being composed. Projection occurs before the orthographic
+  overlay setup, rejects failed, non-finite, behind-camera, and clipped results,
+  and then renders on texture unit zero with the fixed-function program selected.
+* Removed same-tick flare suppression. Nested and portal-style views with the same
+  tick time are legitimate independent views and must each use their own camera
+  matrices and viewport.
+* Standard 2D setup no longer clears the depth attachment owned by the current
+  world framebuffer. The screen effects do not depth-test, and clearing a shared
+  Angelica attachment after world rendering could invalidate later consumers.
+* Final ping-pong composition now runs from a `finally` block, ensuring its
+  temporary attribute frame and parent framebuffer are restored if an individual
+  effect fails.
+
+## Rendering audit
+
+* `/drug Developer Cannabis set 1000` stores `1000` as the desired value, but
+  `DrugSimple.update` clamps it to `1.0` before easing the active value. Cannabis'
+  shader-facing color strengths are also bounded. Redshrooms use the same common
+  post-processing path, while tobacco contributes desaturation to that path.
+* The flare squares are drawn by the lens-flare path and use the bundled flare
+  PNGs. The flare renderer has no sampler uniform of its own; its corruption risk
+  was rendering through an incoming shader or nonzero active texture unit. The
+  rectangular world copies and expanding bright regions instead implicate the
+  shared scene ping-pong/bloom path, whose sampler uniforms correctly name units
+  zero through three but previously did not establish unit zero before binding
+  the captured scene.
+* The ping-pong attachments remain distinct from their sampled input on every
+  pass: it samples the current cache texture and selects the other color
+  attachment as its draw buffer. Targets are retained and resized rather than
+  allocated in the render loop, and every full-screen pass overwrites its target;
+  there is no intentional retained brightness history.
+* Lens visibility remains CPU ray tracing and does not read depth from the GPU.
+  No stale-depth visibility query, blocking readback, asynchronous query pool, or
+  accumulating history exists in this path. Memory growth was not established;
+  the reported approximately `42.228 MiB` direct-buffer display is not treated as
+  evidence of a leak.
+
+## Angelica compatibility audit
+
+* The included audit snapshot contains Angelica's
+  `AngelicaGLStateManagerService` forwarding framebuffer, shader, active-texture,
+  and texture operations into `GLStateManager`; `MixinFramebuffer` replaces the
+  vanilla depth renderbuffer with a texture; and `FinalPassRenderer` and
+  `CompositeRenderer` use separate read/draw framebuffer bindings and explicitly
+  manage texture units. Those implementations informed the exact restoration and
+  framebuffer split used here.
+* The included source snapshot has no build/version metadata, while this project
+  declares no Angelica development dependency: optional client mods are supplied
+  from the ignored `devmods/client` directory. Therefore the screenshot's
+  Angelica `2.2.13` is the only identified runtime version, and source-to-binary
+  equality cannot be confirmed from repository metadata.
+* No Angelica source, shaderpack setting, other mod class, transformer target, or
+  dedicated-server initialization path was changed.
+
+## Runtime verification
+
+* Runtime behavior with Angelica `2.2.13`, shaderpacks both off and on, nested
+  views, Cannabis `1000`, redshrooms, tobacco, and framebuffer resizing remains
+  for developer validation. No claim is made that the reported frame drops are a
+  memory leak.
+
 # Fix LWJGL client attribute mask compilation
 
 ## Fixed

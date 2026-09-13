@@ -60,7 +60,6 @@ public class IvOpenGLHelper {
     }
 
     public static void setUpOpenGLStandard2D(int screenWidth, int screenHeight) {
-        glClear(GL_DEPTH_BUFFER_BIT);
         glMatrixMode(GL_PROJECTION);
         glLoadIdentity();
         glOrtho(0.0D, screenWidth, screenHeight, 0.0D, 1000.0D, 3000.0D);

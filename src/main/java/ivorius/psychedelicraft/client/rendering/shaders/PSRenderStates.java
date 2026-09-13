@@ -508,16 +508,27 @@ public class PSRenderStates
         RenderStateGuard state = RenderStateGuard.capture();
         try
         {
-            realtimePingPong.setParentFrameBuffer(getMCFBO());
+            realtimePingPong.setParentFrameBuffers(
+                RenderStateGuard.getBoundDrawFramebuffer(),
+                RenderStateGuard.getBoundReadFramebuffer());
+            OpenGlHelper.setActiveTexture(OpenGlHelper.defaultTexUnit);
             IvOpenGLHelper.setUpOpenGLStandard2D(screenWidth, screenHeight);
             GL11.glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
 
             realtimePingPong.preTick(screenWidth, screenHeight);
-
-            for (EffectWrapper effectWrapper : effectWrappers)
-                effectWrapper.apply(partialTicks, realtimePingPong, didDepthPass ? depthBuffer : null);
-
-            realtimePingPong.postTick();
+            try
+            {
+                for (EffectWrapper effectWrapper : effectWrappers)
+                {
+                    effectWrapper.apply(partialTicks, realtimePingPong, didDepthPass ? depthBuffer : null);
+                }
+            }
+            finally
+            {
+                // Balance the ping-pong target's attribute stack and restore its
+                // parent framebuffer even when an individual effect fails.
+                realtimePingPong.postTick();
+            }
         }
         finally
         {

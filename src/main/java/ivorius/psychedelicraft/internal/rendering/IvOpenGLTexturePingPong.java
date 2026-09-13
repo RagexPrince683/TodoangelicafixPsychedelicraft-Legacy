@@ -18,6 +18,7 @@ import static org.lwjgl.opengl.GL11.*;
 import java.nio.ByteBuffer;
 
 import net.minecraft.client.renderer.OpenGlHelper;
+import ivorius.psychedelicraft.client.rendering.RenderStateGuard;
 
 import org.apache.logging.log4j.Logger;
 
@@ -36,7 +37,8 @@ public class IvOpenGLTexturePingPong {
     private int screenWidth;
     private int screenHeight;
 
-    private int parentFrameBuffer;
+    private int parentDrawFrameBuffer;
+    private int parentReadFrameBuffer;
 
     private boolean useFramebuffer;
 
@@ -91,7 +93,7 @@ public class IvOpenGLTexturePingPong {
                 fboFailed = true;
             }
 
-            OpenGlHelper.func_153171_g(OpenGlHelper.field_153198_e, parentFrameBuffer);
+            bindParentFrameBuffers();
 
             setup = true;
         } else {
@@ -128,11 +130,16 @@ public class IvOpenGLTexturePingPong {
     }
 
     public void setParentFrameBuffer(int parentFrameBuffer) {
-        this.parentFrameBuffer = parentFrameBuffer > 0 ? parentFrameBuffer : 0;
+        setParentFrameBuffers(parentFrameBuffer, parentFrameBuffer);
+    }
+
+    public void setParentFrameBuffers(int drawFrameBuffer, int readFrameBuffer) {
+        this.parentDrawFrameBuffer = Math.max(drawFrameBuffer, 0);
+        this.parentReadFrameBuffer = Math.max(readFrameBuffer, 0);
     }
 
     public int getParentFrameBuffer() {
-        return this.parentFrameBuffer;
+        return this.parentDrawFrameBuffer;
     }
 
     public void preTick(int screenWidth, int screenHeight) {
@@ -142,6 +149,8 @@ public class IvOpenGLTexturePingPong {
     }
 
     public void pingPong() {
+        OpenGlHelper.setActiveTexture(OpenGlHelper.defaultTexUnit);
+
         if (setupRealtimeFB) {
             if (!setupCacheTextureForTick) {
                 activeBuffer = 0;
@@ -173,6 +182,7 @@ public class IvOpenGLTexturePingPong {
     }
 
     public void bindCurrentTexture() {
+        OpenGlHelper.setActiveTexture(OpenGlHelper.defaultTexUnit);
         glBindTexture(GL_TEXTURE_2D, cacheTextures[activeBuffer]);
     }
 
@@ -181,13 +191,22 @@ public class IvOpenGLTexturePingPong {
             // glDrawBuffer(GL_BACK);
             // glReadBuffer(GL_BACK);
             glPopAttrib();
-            OpenGlHelper.func_153171_g(OpenGlHelper.field_153198_e, parentFrameBuffer);
+            bindParentFrameBuffers();
 
             activeBuffer = 1 - activeBuffer;
 
             glColor3f(1.0f, 1.0f, 1.0f);
             bindCurrentTexture();
             IvRenderHelper.drawRectFullScreen(screenWidth, screenHeight);
+        }
+    }
+
+    private void bindParentFrameBuffers() {
+        if (RenderStateGuard.supportsSeparateFramebufferBindings()) {
+            OpenGlHelper.func_153171_g(0x8CA9, parentDrawFrameBuffer);
+            OpenGlHelper.func_153171_g(0x8CA8, parentReadFrameBuffer);
+        } else {
+            OpenGlHelper.func_153171_g(OpenGlHelper.field_153198_e, parentDrawFrameBuffer);
         }
     }
 

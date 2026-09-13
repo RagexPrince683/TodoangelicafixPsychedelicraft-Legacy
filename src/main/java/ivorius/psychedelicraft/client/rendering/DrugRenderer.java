@@ -152,8 +152,6 @@ public class DrugRenderer implements IDrugRenderer
 
     public void renderOverlaysBeforeShaders(float partialTicks, EntityLivingBase entity, int updateCounter, int width, int height, DrugProperties drugProperties)
     {
-        IvOpenGLHelper.setUpOpenGLStandard2D(width, height);
-
         effectLensFlare.sunFlareIntensity = PSRenderStates.sunFlareIntensity;
 
         if (effectLensFlare.shouldApply(updateCounter + partialTicks))

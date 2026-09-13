@@ -19,7 +19,12 @@ import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.Vec3;
 import net.minecraft.world.World;
 import org.lwjgl.opengl.GL11;
+import org.lwjgl.BufferUtils;
+import org.lwjgl.util.glu.GLU;
 import org.lwjgl.util.vector.Vector3f;
+
+import java.nio.FloatBuffer;
+import java.nio.IntBuffer;
 
 /**
  * Created by lukas on 26.02.14.
@@ -34,9 +39,16 @@ public class EffectLensFlare implements Iv2DScreenEffect
     public float sunFlareIntensity;
 
     public float actualSunAlpha = 0.0f;
-    private int lastRenderedTick = Integer.MIN_VALUE;
-    private int lastRenderedPartialTick = Integer.MIN_VALUE;
     private World lastWorld;
+
+    private static final ThreadLocal<ProjectionScratch> PROJECTION_SCRATCH = new ThreadLocal<ProjectionScratch>()
+    {
+        @Override
+        protected ProjectionScratch initialValue()
+        {
+            return new ProjectionScratch();
+        }
+    };
 
     public void updateLensFlares()
     {
@@ -47,8 +59,6 @@ public class EffectLensFlare implements Iv2DScreenEffect
         if (world != lastWorld)
         {
             actualSunAlpha = 0.0f;
-            lastRenderedTick = Integer.MIN_VALUE;
-            lastRenderedPartialTick = Integer.MIN_VALUE;
             lastWorld = world;
         }
 
@@ -103,15 +113,6 @@ public class EffectLensFlare implements Iv2DScreenEffect
             return;
         }
 
-        int tick = mc.ingameGUI.getUpdateCounter();
-        int partialTick = Float.floatToIntBits(partialTicks);
-        if (tick == lastRenderedTick && partialTick == lastRenderedPartialTick)
-        {
-            return;
-        }
-        lastRenderedTick = tick;
-        lastRenderedPartialTick = partialTick;
-
         float sunRadians = world.getCelestialAngleRadians(partialTicks);
 
         Vector3f sunVecCenter = new Vector3f(-MathHelper.sin(sunRadians) * 120.0f, MathHelper.cos(sunRadians) * 120.0f, 0.0f);
@@ -119,30 +120,33 @@ public class EffectLensFlare implements Iv2DScreenEffect
         RenderStateGuard state = RenderStateGuard.capture();
         try
         {
-            float genSize = screenWidth > screenHeight ? screenWidth : screenHeight;
-
-            Vector3f sunPositionOnScreen = PsycheMatrixHelper.projectPointCurrentView(sunVecCenter, partialTicks);
+            Vector3f sunPositionOnScreen = projectSunFromCurrentView(renderEntity, sunVecCenter, partialTicks);
 
             if (!isFinite(sunPositionOnScreen.x) || !isFinite(sunPositionOnScreen.y)
-                || !isFinite(sunPositionOnScreen.z) || sunPositionOnScreen.z <= 0.0f)
+                || !isFinite(sunPositionOnScreen.z) || sunPositionOnScreen.z <= 0.0f
+                || sunPositionOnScreen.z >= 1.0f)
             {
                 return;
             }
 
-            Vector3f normSunPos = new Vector3f();
-            sunPositionOnScreen.normalise(normSunPos);
-            float xDist = normSunPos.x * screenWidth;
-            float yDist = normSunPos.y * screenHeight;
+            OpenGlHelper.func_153161_d(0);
+            OpenGlHelper.setActiveTexture(OpenGlHelper.defaultTexUnit);
+            IvOpenGLHelper.setUpOpenGLStandard2D(screenWidth, screenHeight);
+            GL11.glEnable(GL11.GL_TEXTURE_2D);
+
+            float genSize = screenWidth > screenHeight ? screenWidth : screenHeight;
+            float screenCenterX = screenWidth * 0.5f;
+            float screenCenterY = screenHeight * 0.5f;
+            float xDist = sunPositionOnScreen.x - screenCenterX;
+            float yDist = sunPositionOnScreen.y - screenCenterY;
+            float normalizedX = xDist / screenCenterX;
+            float normalizedY = yDist / screenCenterY;
 
             Vec3 color = world.getFogColor(1.0f);
 
             if (sunPositionOnScreen.z > 0.0f)
             {
-                float alpha = sunPositionOnScreen.z;
-                if (alpha > 1.0f)
-                {
-                    alpha = 1.0f;
-                }
+                float alpha = 1.0f;
 
                 GL11.glDisable(GL11.GL_DEPTH_TEST);
                 GL11.glDepthMask(false);
@@ -150,9 +154,6 @@ public class EffectLensFlare implements Iv2DScreenEffect
                 OpenGlHelper.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE, GL11.GL_ONE, GL11.GL_ZERO);
                 GL11.glDisable(GL11.GL_ALPHA_TEST);
                 Tessellator var3 = Tessellator.instance;
-
-                float screenCenterX = screenWidth * 0.5f;
-                float screenCenterY = screenHeight * 0.5f;
 
                 for (int i = 0; i < sunFlareSizes.length; i++)
                 {
@@ -172,7 +173,7 @@ public class EffectLensFlare implements Iv2DScreenEffect
                 }
 
                 // Looks weird because of a hard edge... :|
-                float genDist = 1.0f - (normSunPos.x * normSunPos.x + normSunPos.y * normSunPos.y);
+                float genDist = 1.0f - (normalizedX * normalizedX + normalizedY * normalizedY);
                 float blendingSize = (genDist - 0.1f) * sunFlareIntensity * 250.0f * genSize;
 
                 if (blendingSize > 0.0f)
@@ -232,13 +233,57 @@ public class EffectLensFlare implements Iv2DScreenEffect
     public void destruct()
     {
         actualSunAlpha = 0.0f;
-        lastRenderedTick = Integer.MIN_VALUE;
-        lastRenderedPartialTick = Integer.MIN_VALUE;
         lastWorld = null;
+    }
+
+    private static Vector3f projectSunFromCurrentView(EntityLivingBase camera, Vector3f sunOffset, float partialTicks)
+    {
+        ProjectionScratch scratch = PROJECTION_SCRATCH.get();
+        scratch.modelView.clear();
+        scratch.projection.clear();
+        scratch.viewport.clear();
+        scratch.projected.clear();
+
+        GL11.glGetFloat(GL11.GL_MODELVIEW_MATRIX, scratch.modelView);
+        GL11.glGetFloat(GL11.GL_PROJECTION_MATRIX, scratch.projection);
+        GL11.glGetInteger(GL11.GL_VIEWPORT, scratch.viewport);
+
+        double cameraX = camera.prevPosX + (camera.posX - camera.prevPosX) * partialTicks;
+        double cameraY = camera.prevPosY + (camera.posY - camera.prevPosY) * partialTicks;
+        double cameraZ = camera.prevPosZ + (camera.posZ - camera.prevPosZ) * partialTicks;
+        boolean projected = GLU.gluProject(
+            (float) (cameraX + sunOffset.x),
+            (float) (cameraY + sunOffset.y),
+            (float) (cameraZ + sunOffset.z),
+            scratch.modelView,
+            scratch.projection,
+            scratch.viewport,
+            scratch.projected);
+
+        if (!projected)
+        {
+            return new Vector3f(Float.NaN, Float.NaN, Float.NaN);
+        }
+
+        float viewportX = scratch.viewport.get(0);
+        float viewportY = scratch.viewport.get(1);
+        float viewportHeight = scratch.viewport.get(3);
+        return new Vector3f(
+            scratch.projected.get(0) - viewportX,
+            viewportHeight - (scratch.projected.get(1) - viewportY),
+            scratch.projected.get(2));
     }
 
     private static boolean isFinite(float value)
     {
         return !Float.isNaN(value) && !Float.isInfinite(value);
+    }
+
+    private static final class ProjectionScratch
+    {
+        private final FloatBuffer modelView = BufferUtils.createFloatBuffer(16);
+        private final FloatBuffer projection = BufferUtils.createFloatBuffer(16);
+        private final IntBuffer viewport = BufferUtils.createIntBuffer(16);
+        private final FloatBuffer projected = BufferUtils.createFloatBuffer(3);
     }
 }
