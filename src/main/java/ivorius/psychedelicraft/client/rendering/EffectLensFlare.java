@@ -7,6 +7,7 @@ package ivorius.psychedelicraft.client.rendering;
 
 import ivorius.psychedelicraft.internal.math.IvMathHelper;
 import ivorius.psychedelicraft.internal.rendering.Iv2DScreenEffect;
+import ivorius.psychedelicraft.internal.rendering.IvOpenGLHelper;
 import ivorius.psychedelicraft.internal.rendering.IvOpenGLTexturePingPong;
 import ivorius.psychedelicraft.internal.rendering.IvRenderHelper;
 import net.minecraft.client.Minecraft;
