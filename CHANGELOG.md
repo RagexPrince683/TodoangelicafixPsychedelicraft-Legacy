@@ -1,3 +1,17 @@
+# Fix LWJGL client attribute mask compilation
+
+## Fixed
+
+* Replaced the unavailable `GL11.GL_CLIENT_ALL_ATTRIB_BITS` reference in the
+  client-only render state guard with LWJGL 2.9.1's supported
+  `GL11.GL_CLIENT_VERTEX_ARRAY_BIT` mask. The guarded effects use Minecraft's
+  `Tessellator`, which changes client vertex-array enable and pointer state, but
+  they do not change client pixel-store state.
+* The existing paired `glPushClientAttrib` and `glPopClientAttrib` calls remain
+  inside the guard, and both rendering callers continue to restore the guard in
+  `finally` blocks. Server attribute state, matrices, shader program, framebuffer,
+  and active texture restoration are unchanged for Angelica compatibility.
+
 # Fix Psychedelicraft rendering with Angelica
 
 ## Fixed
