@@ -14,6 +14,7 @@
 package ivorius.psychedelicraft.internal.rendering;
 
 import static org.lwjgl.opengl.GL11.*;
+import static org.lwjgl.opengl.GL12.GL_CLAMP_TO_EDGE;
 
 import java.nio.ByteBuffer;
 
@@ -67,6 +68,7 @@ public class IvOpenGLTexturePingPong {
                 GL_RGBA,
                 GL_UNSIGNED_BYTE,
                 (ByteBuffer) null);
+            configureOwnedTexture();
         }
 
         if (cacheTextures[0] <= 0 || cacheTextures[1] <= 0) {
@@ -206,6 +208,12 @@ public class IvOpenGLTexturePingPong {
     public void bindCurrentTexture() {
         OpenGlHelper.setActiveTexture(OpenGlHelper.defaultTexUnit);
         glBindTexture(GL_TEXTURE_2D, cacheTextures[activeBuffer]);
+        configureOwnedTexture();
+    }
+
+    private void configureOwnedTexture() {
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     }
 
     public void postTick(boolean composeResult) {

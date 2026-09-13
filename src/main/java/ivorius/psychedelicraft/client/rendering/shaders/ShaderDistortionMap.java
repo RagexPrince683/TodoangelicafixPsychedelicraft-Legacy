@@ -58,12 +58,17 @@ public class ShaderDistortionMap extends IvShaderInstance2D
         setUniformInts("noiseTex1", 3);
 
         setUniformFloats("totalAlpha", alpha);
-        setUniformFloats("strength", strength);
-        setUniformFloats("texTranslation0", texTranslation0);
-        setUniformFloats("texTranslation1", texTranslation1);
+        setUniformFloats("strength", finiteOrZero(strength));
+        setUniformFloats("texTranslation0", finiteOrZero(texTranslation0[0]), finiteOrZero(texTranslation0[1]));
+        setUniformFloats("texTranslation1", finiteOrZero(texTranslation1[0]), finiteOrZero(texTranslation1[1]));
 
         drawFullScreen(screenWidth, screenHeight, pingPong);
 
         stopUsingShader();
+    }
+
+    private static float finiteOrZero(float value)
+    {
+        return Float.isNaN(value) || Float.isInfinite(value) ? 0.0f : value;
     }
 }

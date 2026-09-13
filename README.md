@@ -18,6 +18,10 @@ composes Psychedelicraft's drug shaders after the world, lens flares are skipped
 only on views where a prepared drug shader will actually render. They return
 automatically once the final drug shader is inactive.
 
+Displaced scene samples are clamped to the centers of the captured viewport's
+outermost texels. This preserves drug distortion without allowing horizontal
+offsets to wrap terrain from the opposite edge of the scene.
+
 The `REFERENCEFOLDER/AngelicaSRC` tree is audit-only and is not compiled, bundled,
 or modified as an Angelica repair. Runtime testing should include Angelica with
 shaderpacks both disabled and enabled.

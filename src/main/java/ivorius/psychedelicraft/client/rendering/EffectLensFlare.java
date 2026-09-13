@@ -5,6 +5,7 @@
 
 package ivorius.psychedelicraft.client.rendering;
 
+import ivorius.psychedelicraft.client.rendering.shaders.PSRenderStates;
 import ivorius.psychedelicraft.internal.math.IvMathHelper;
 import ivorius.psychedelicraft.internal.rendering.Iv2DScreenEffect;
 import ivorius.psychedelicraft.internal.rendering.IvOpenGLHelper;
@@ -39,6 +40,12 @@ public class EffectLensFlare implements Iv2DScreenEffect
 
     public void updateLensFlares()
     {
+        if (PSRenderStates.hasActiveDrugShader())
+        {
+            suppress();
+            return;
+        }
+
         Minecraft mc = Minecraft.getMinecraft();
         World world = mc.theWorld;
         EntityLivingBase renderEntity = mc.renderViewEntity;
@@ -90,6 +97,12 @@ public class EffectLensFlare implements Iv2DScreenEffect
 
     public void renderLensFlares(int screenWidth, int screenHeight, float partialTicks)
     {
+        if (PSRenderStates.hasActiveDrugShader())
+        {
+            suppress();
+            return;
+        }
+
         Minecraft mc = Minecraft.getMinecraft();
         World world = mc.theWorld;
         EntityLivingBase renderEntity = mc.renderViewEntity;
@@ -207,6 +220,7 @@ public class EffectLensFlare implements Iv2DScreenEffect
 
     public void suppress()
     {
+        sunFlareIntensity = 0.0f;
         actualSunAlpha = 0.0f;
         lastWorld = null;
     }
@@ -214,12 +228,18 @@ public class EffectLensFlare implements Iv2DScreenEffect
     @Override
     public boolean shouldApply(float ticks)
     {
-        return sunFlareIntensity > 0.0f;
+        return !PSRenderStates.hasActiveDrugShader() && sunFlareIntensity > 0.0f;
     }
 
     @Override
     public void apply(int screenWidth, int screenHeight, float ticks, IvOpenGLTexturePingPong pingPong)
     {
+        if (PSRenderStates.hasActiveDrugShader())
+        {
+            suppress();
+            return;
+        }
+
         pingPong.pingPong();
         IvRenderHelper.drawRectFullScreen(screenWidth, screenHeight);
 
