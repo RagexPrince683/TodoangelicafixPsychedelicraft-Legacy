@@ -3,6 +3,7 @@ package ivorius.psychedelicraft.client.rendering;
 import net.minecraft.client.renderer.OpenGlHelper;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL20;
+import org.lwjgl.opengl.GLContext;
 
 /**
  * Saves the compatibility-profile state touched by Psychedelicraft's screen effects.
@@ -15,21 +16,35 @@ import org.lwjgl.opengl.GL20;
 public final class RenderStateGuard
 {
     private static final int GL_FRAMEBUFFER_BINDING = 0x8CA6;
+    private static final int GL_DRAW_FRAMEBUFFER = 0x8CA9;
+    private static final int GL_DRAW_FRAMEBUFFER_BINDING = 0x8CA6;
+    private static final int GL_READ_FRAMEBUFFER = 0x8CA8;
+    private static final int GL_READ_FRAMEBUFFER_BINDING = 0x8CAA;
+    private static final int GL_TEXTURE_BINDING_2D = 0x8069;
+    private static final int TRACKED_TEXTURE_UNITS = 4;
 
     private final int activeTexture;
-    private final int framebuffer;
+    private final int drawFramebuffer;
+    private final int readFramebuffer;
     private final int matrixMode;
     private final int program;
+    private final int[] textureBindings = new int[TRACKED_TEXTURE_UNITS];
     private boolean restored;
 
     private RenderStateGuard()
     {
         activeTexture = GL11.glGetInteger(GL13_ACTIVE_TEXTURE);
-        framebuffer = OpenGlHelper.framebufferSupported
-            ? GL11.glGetInteger(GL_FRAMEBUFFER_BINDING)
-            : 0;
+        drawFramebuffer = getBoundDrawFramebuffer();
+        readFramebuffer = getBoundReadFramebuffer();
         matrixMode = GL11.glGetInteger(GL11.GL_MATRIX_MODE);
         program = GL11.glGetInteger(GL20.GL_CURRENT_PROGRAM);
+
+        for (int unit = 0; unit < TRACKED_TEXTURE_UNITS; unit++)
+        {
+            OpenGlHelper.setActiveTexture(OpenGlHelper.defaultTexUnit + unit);
+            textureBindings[unit] = GL11.glGetInteger(GL_TEXTURE_BINDING_2D);
+        }
+        OpenGlHelper.setActiveTexture(activeTexture);
 
         GL11.glPushAttrib(GL11.GL_ALL_ATTRIB_BITS);
         // Tessellator changes the enabled client arrays and their pointer bindings.
@@ -62,7 +77,20 @@ public final class RenderStateGuard
         OpenGlHelper.func_153161_d(program);
         if (OpenGlHelper.framebufferSupported)
         {
-            OpenGlHelper.func_153171_g(OpenGlHelper.field_153198_e, framebuffer);
+            if (supportsSeparateFramebufferBindings())
+            {
+                OpenGlHelper.func_153171_g(GL_DRAW_FRAMEBUFFER, drawFramebuffer);
+                OpenGlHelper.func_153171_g(GL_READ_FRAMEBUFFER, readFramebuffer);
+            }
+            else
+            {
+                OpenGlHelper.func_153171_g(OpenGlHelper.field_153198_e, drawFramebuffer);
+            }
+        }
+        for (int unit = 0; unit < TRACKED_TEXTURE_UNITS; unit++)
+        {
+            OpenGlHelper.setActiveTexture(OpenGlHelper.defaultTexUnit + unit);
+            GL11.glBindTexture(GL11.GL_TEXTURE_2D, textureBindings[unit]);
         }
         OpenGlHelper.setActiveTexture(activeTexture);
         GL11.glMatrixMode(matrixMode);
@@ -71,9 +99,32 @@ public final class RenderStateGuard
 
     public static int getBoundFramebuffer()
     {
-        return OpenGlHelper.framebufferSupported
-            ? GL11.glGetInteger(GL_FRAMEBUFFER_BINDING)
-            : 0;
+        return getBoundDrawFramebuffer();
+    }
+
+    public static int getBoundDrawFramebuffer()
+    {
+        if (!OpenGlHelper.framebufferSupported)
+        {
+            return 0;
+        }
+        return GL11.glGetInteger(GL_FRAMEBUFFER_BINDING);
+    }
+
+    public static int getBoundReadFramebuffer()
+    {
+        if (!OpenGlHelper.framebufferSupported)
+        {
+            return 0;
+        }
+        return supportsSeparateFramebufferBindings()
+            ? GL11.glGetInteger(GL_READ_FRAMEBUFFER_BINDING)
+            : GL11.glGetInteger(GL_FRAMEBUFFER_BINDING);
+    }
+
+    public static boolean supportsSeparateFramebufferBindings()
+    {
+        return GLContext.getCapabilities().OpenGL30;
     }
 
     private static void pushMatrix(int mode)

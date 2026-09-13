@@ -4,6 +4,19 @@
 <p>It's a fork of original repository which uses GTNH Gradle for build, it allows you to build it even with newer version of JDK & Gradle</p>
 <p>This fork disables most GL ERROR checks so it doesn't infinitely spam console with Angelica or OptiFine. Some effects surprisingly work even with other shader mods</p>
 
+## Angelica rendering compatibility
+
+Psychedelicraft's screen effects preserve the framebuffer, shader, viewport,
+matrix, texture-unit, texture-binding, blend, depth, alpha, and color state that
+was active when each effect began. The post-processing pipeline uses reusable
+ping-pong targets and keeps distinct framebuffer read/draw ownership intact on
+OpenGL 3.0 renderers. Lens flares use the live camera matrices for each rendered
+view and do not require an active shaderpack.
+
+The `REFERENCEFOLDER/AngelicaSRC` tree is audit-only and is not compiled, bundled,
+or modified as an Angelica repair. Runtime testing should include Angelica with
+shaderpacks both disabled and enabled.
+
 Psychedelicraft is self-contained and does **not** require IvToolkit. Other mods in
 your installation may still require IvToolkit independently.
 
