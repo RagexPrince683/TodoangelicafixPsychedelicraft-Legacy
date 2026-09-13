@@ -44,7 +44,11 @@ public abstract class ScreenEffectWrapper<ScreenEffect extends Iv2DScreenEffect>
 
         if (screenEffect.shouldApply(ticks + partialTicks))
         {
-            screenEffect.apply(mc.displayWidth, mc.displayHeight, ticks + partialTicks, pingPong);
+            screenEffect.apply(
+                pingPong.getScreenWidth(),
+                pingPong.getScreenHeight(),
+                ticks + partialTicks,
+                pingPong);
         }
     }
 

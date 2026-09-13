@@ -1,3 +1,58 @@
+# Fix drug shader corruption and restore lens flares
+
+## Confirmed causes and fixes
+
+* The scene-copy operation used whichever read framebuffer happened to be bound,
+  even though the completed world belonged to the incoming draw framebuffer.
+  Angelica permits those bindings to differ. Object-dependent contents from the
+  stale read target were therefore copied into the reusable scene texture and
+  appeared as repeated strips, displaced fragments, frozen rectangles, and
+  growing bright bloom regions. Scene capture now temporarily binds the completed
+  draw framebuffer for reading, selects its color buffer explicitly, honors the
+  viewport origin, and restores the independent incoming bindings and buffer
+  selections before composition.
+* Every intermediate target is prepared as a complete full-screen overwrite with
+  scissor, depth, stencil, blending, depth writes, and color masks made explicit.
+  Texture unit zero remains the scene sampler, cache textures retain clamp-to-edge
+  wrapping, and each pass still samples one ping-pong attachment while writing
+  the other. A failed effect now abandons its incomplete intermediate instead of
+  composing it over the valid incoming scene.
+* The lens-flare regression was caused by projecting a camera-relative sun vector
+  through an unsuitable matrix captured after world rendering and adding the
+  interpolated camera position. Minecraft's world model-view expects the sun as
+  a camera-relative direction there, so the addition applied camera translation
+  a second time; the post-world capture could also already be an overlay/hand
+  matrix. The default pass now captures model-view, projection, viewport, and
+  render-view identity at the pre-sky world stage. Flare projection uses the
+  direction directly, rejects non-positive clip `w` before perspective division,
+  checks normalized clip depth, and maps viewport pixels into the physical
+  overlay coordinate system.
+
+## Scope and audit
+
+* Cannabis (including `/drug Developer Cannabis set 1000`) and redshrooms enter
+  the same corrected scene capture, shader-wrapper, ping-pong, and composition
+  path. Their intentional wobble, color, blur, and distortion behavior is not
+  disabled or clamped differently by this repair.
+* The Angelica audit covered `AngelicaGLStateManagerService.glBindFramebuffer`,
+  `GLStateManager` redirects, `FixedFunctionWorldRenderingPipeline.beginLevelRendering`,
+  `GlFramebuffer.bindAsReadBuffer`, `GlFramebuffer.bindAsDrawBuffer`,
+  `GlFramebuffer.readBuffer`, `CeleritasWorldRenderer.createChunkRenderMatrices`,
+  and the composite/final-pass framebuffer ordering. No file under
+  `REFERENCEFOLDER/AngelicaSRC` was changed.
+* Terrain, translucent geometry, weather, and the hand finish before the existing
+  post-world scene capture. Ordinary rain streaks and Minecraft's square sun are
+  not treated as corruption, and no synchronization setting is proposed as a
+  shader repair.
+
+## Runtime verification
+
+* Visual behavior remains unverified at runtime, including Angelica `2.2.13`
+  with its shaderpack off, resized and offset viewports, alternate camera views,
+  Cannabis at `1000`, and redshrooms. Code inspection does not establish visual
+  success. Shaderpack-on interaction remains outside the reported compatibility
+  target and is not claimed visually verified by this change.
+
 # Fix rendering corruption and lens flare flicker
 
 ## Fixed

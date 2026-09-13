@@ -65,7 +65,11 @@ public abstract class ShaderWrapper<ShaderInstance extends IvShaderInstance2D> i
 
             if (shaderInstance.shouldApply(ticks + partialTicks))
             {
-                shaderInstance.apply(mc.displayWidth, mc.displayHeight, ticks + partialTicks, pingPong);
+                shaderInstance.apply(
+                    pingPong.getScreenWidth(),
+                    pingPong.getScreenHeight(),
+                    ticks + partialTicks,
+                    pingPong);
             }
         }
     }

@@ -12,6 +12,7 @@ import ivorius.psychedelicraft.client.rendering.EntityFakeSun;
 import ivorius.psychedelicraft.client.rendering.GLStateProxy;
 import ivorius.psychedelicraft.client.rendering.PSAccessHelperClient;
 import ivorius.psychedelicraft.client.rendering.PsycheShadowHelper;
+import ivorius.psychedelicraft.client.rendering.PsycheMatrixHelper;
 import ivorius.psychedelicraft.client.rendering.RenderStateGuard;
 import ivorius.psychedelicraft.client.rendering.effectWrappers.*;
 import net.minecraft.client.Minecraft;
@@ -77,6 +78,7 @@ public class PSRenderStates
     public static void preRender(float ticks)
     {
         didDepthPass = false;
+        PsycheMatrixHelper.invalidateCapturedWorldView();
     }
 
     public static void preRender3D(float ticks)
@@ -307,6 +309,11 @@ public class PSRenderStates
 
     public static void preRenderSky(float partialTicks)
     {
+        if ("Default".equals(currentRenderPass))
+        {
+            PsycheMatrixHelper.captureCurrentWorldView(Minecraft.getMinecraft().renderViewEntity);
+        }
+
         if (renderFakeSkybox)
         {
             setForceColorSafeMode(true);
@@ -502,32 +509,40 @@ public class PSRenderStates
 
         Minecraft mc = Minecraft.getMinecraft();
 
-        int screenWidth = mc.displayWidth;
-        int screenHeight = mc.displayHeight;
-
         RenderStateGuard state = RenderStateGuard.capture();
         try
         {
+            int screenWidth = state.getViewportWidth();
+            int screenHeight = state.getViewportHeight();
+            if (screenWidth <= 0 || screenHeight <= 0)
+            {
+                return;
+            }
+
             realtimePingPong.setParentFrameBuffers(
                 RenderStateGuard.getBoundDrawFramebuffer(),
                 RenderStateGuard.getBoundReadFramebuffer());
+            realtimePingPong.setParentBuffers(state.getDrawBuffer(), state.getReadBuffer());
+            realtimePingPong.setSourceViewportOrigin(state.getViewportX(), state.getViewportY());
             OpenGlHelper.setActiveTexture(OpenGlHelper.defaultTexUnit);
             IvOpenGLHelper.setUpOpenGLStandard2D(screenWidth, screenHeight);
             GL11.glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
 
             realtimePingPong.preTick(screenWidth, screenHeight);
+            boolean completed = false;
             try
             {
                 for (EffectWrapper effectWrapper : effectWrappers)
                 {
                     effectWrapper.apply(partialTicks, realtimePingPong, didDepthPass ? depthBuffer : null);
                 }
+                completed = true;
             }
             finally
             {
                 // Balance the ping-pong target's attribute stack and restore its
                 // parent framebuffer even when an individual effect fails.
-                realtimePingPong.postTick();
+                realtimePingPong.postTick(completed);
             }
         }
         finally

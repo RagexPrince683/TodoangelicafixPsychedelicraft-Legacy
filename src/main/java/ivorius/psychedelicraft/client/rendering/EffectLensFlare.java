@@ -20,12 +20,7 @@ import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.Vec3;
 import net.minecraft.world.World;
 import org.lwjgl.opengl.GL11;
-import org.lwjgl.BufferUtils;
-import org.lwjgl.util.glu.GLU;
 import org.lwjgl.util.vector.Vector3f;
-
-import java.nio.FloatBuffer;
-import java.nio.IntBuffer;
 
 /**
  * Created by lukas on 26.02.14.
@@ -41,15 +36,6 @@ public class EffectLensFlare implements Iv2DScreenEffect
 
     public float actualSunAlpha = 0.0f;
     private World lastWorld;
-
-    private static final ThreadLocal<ProjectionScratch> PROJECTION_SCRATCH = new ThreadLocal<ProjectionScratch>()
-    {
-        @Override
-        protected ProjectionScratch initialValue()
-        {
-            return new ProjectionScratch();
-        }
-    };
 
     public void updateLensFlares()
     {
@@ -121,11 +107,15 @@ public class EffectLensFlare implements Iv2DScreenEffect
         RenderStateGuard state = RenderStateGuard.capture();
         try
         {
-            Vector3f sunPositionOnScreen = projectSunFromCurrentView(renderEntity, sunVecCenter, partialTicks);
+            Vector3f sunPositionOnScreen = PsycheMatrixHelper.projectDirectionCurrentView(
+                renderEntity,
+                sunVecCenter,
+                screenHeight);
 
-            if (!isFinite(sunPositionOnScreen.x) || !isFinite(sunPositionOnScreen.y)
-                || !isFinite(sunPositionOnScreen.z) || sunPositionOnScreen.z <= 0.0f
-                || sunPositionOnScreen.z >= 1.0f)
+            if (sunPositionOnScreen == null
+                || !isFinite(sunPositionOnScreen.x)
+                || !isFinite(sunPositionOnScreen.y)
+                || !isFinite(sunPositionOnScreen.z))
             {
                 return;
             }
@@ -237,54 +227,9 @@ public class EffectLensFlare implements Iv2DScreenEffect
         lastWorld = null;
     }
 
-    private static Vector3f projectSunFromCurrentView(EntityLivingBase camera, Vector3f sunOffset, float partialTicks)
-    {
-        ProjectionScratch scratch = PROJECTION_SCRATCH.get();
-        scratch.modelView.clear();
-        scratch.projection.clear();
-        scratch.viewport.clear();
-        scratch.projected.clear();
-
-        GL11.glGetFloat(GL11.GL_MODELVIEW_MATRIX, scratch.modelView);
-        GL11.glGetFloat(GL11.GL_PROJECTION_MATRIX, scratch.projection);
-        GL11.glGetInteger(GL11.GL_VIEWPORT, scratch.viewport);
-
-        double cameraX = camera.prevPosX + (camera.posX - camera.prevPosX) * partialTicks;
-        double cameraY = camera.prevPosY + (camera.posY - camera.prevPosY) * partialTicks;
-        double cameraZ = camera.prevPosZ + (camera.posZ - camera.prevPosZ) * partialTicks;
-        boolean projected = GLU.gluProject(
-            (float) (cameraX + sunOffset.x),
-            (float) (cameraY + sunOffset.y),
-            (float) (cameraZ + sunOffset.z),
-            scratch.modelView,
-            scratch.projection,
-            scratch.viewport,
-            scratch.projected);
-
-        if (!projected)
-        {
-            return new Vector3f(Float.NaN, Float.NaN, Float.NaN);
-        }
-
-        float viewportX = scratch.viewport.get(0);
-        float viewportY = scratch.viewport.get(1);
-        float viewportHeight = scratch.viewport.get(3);
-        return new Vector3f(
-            scratch.projected.get(0) - viewportX,
-            viewportHeight - (scratch.projected.get(1) - viewportY),
-            scratch.projected.get(2));
-    }
-
     private static boolean isFinite(float value)
     {
         return !Float.isNaN(value) && !Float.isInfinite(value);
     }
 
-    private static final class ProjectionScratch
-    {
-        private final FloatBuffer modelView = BufferUtils.createFloatBuffer(16);
-        private final FloatBuffer projection = BufferUtils.createFloatBuffer(16);
-        private final IntBuffer viewport = BufferUtils.createIntBuffer(16);
-        private final FloatBuffer projected = BufferUtils.createFloatBuffer(3);
-    }
 }
