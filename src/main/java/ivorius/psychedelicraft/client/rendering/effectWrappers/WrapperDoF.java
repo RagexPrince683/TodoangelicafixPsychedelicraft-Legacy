@@ -33,6 +33,12 @@ public class WrapperDoF extends ShaderWrapper<ShaderDoF>
     }
 
     @Override
+    protected boolean isDrugShaderActive(float partialTicks, int ticks)
+    {
+        return false;
+    }
+
+    @Override
     public void setShaderValues(float partialTicks, int ticks, IvDepthBuffer depthBuffer)
     {
         if (depthBuffer != null && isActive())

@@ -205,6 +205,12 @@ public class EffectLensFlare implements Iv2DScreenEffect
         }
     }
 
+    public void suppress()
+    {
+        actualSunAlpha = 0.0f;
+        lastWorld = null;
+    }
+
     @Override
     public boolean shouldApply(float ticks)
     {
@@ -223,8 +229,7 @@ public class EffectLensFlare implements Iv2DScreenEffect
     @Override
     public void destruct()
     {
-        actualSunAlpha = 0.0f;
-        lastWorld = null;
+        suppress();
     }
 
     private static boolean isFinite(float value)

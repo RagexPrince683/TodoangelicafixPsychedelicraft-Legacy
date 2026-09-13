@@ -25,6 +25,8 @@ public abstract class ShaderWrapper<ShaderInstance extends IvShaderInstance2D> i
     public ResourceLocation fragmentShaderFile;
 
     public String utils;
+    private boolean preparedToApply;
+    private boolean activeDrugShader;
 
     public ShaderWrapper(ShaderInstance shaderInstance, ResourceLocation vertexShaderFile, ResourceLocation fragmentShaderFile, String utils)
     {
@@ -55,23 +57,44 @@ public abstract class ShaderWrapper<ShaderInstance extends IvShaderInstance2D> i
     }
 
     @Override
-    public void apply(float partialTicks, IvOpenGLTexturePingPong pingPong, IvDepthBuffer depthBuffer)
+    public void prepare(float partialTicks, IvDepthBuffer depthBuffer)
     {
-        if (PSRenderStates.shader2DEnabled)
+        preparedToApply = false;
+        activeDrugShader = false;
+
+        if (PSRenderStates.shader2DEnabled && Minecraft.getMinecraft().renderViewEntity != null)
         {
             Minecraft mc = Minecraft.getMinecraft();
             int ticks = mc.renderViewEntity.ticksExisted;
             setShaderValues(partialTicks, ticks, depthBuffer);
-
-            if (shaderInstance.shouldApply(ticks + partialTicks))
-            {
-                shaderInstance.apply(
-                    pingPong.getScreenWidth(),
-                    pingPong.getScreenHeight(),
-                    ticks + partialTicks,
-                    pingPong);
-            }
+            preparedToApply = shaderInstance.shouldApply(ticks + partialTicks);
+            activeDrugShader = preparedToApply && isDrugShaderActive(partialTicks, ticks);
         }
+    }
+
+    @Override
+    public void apply(float partialTicks, IvOpenGLTexturePingPong pingPong, IvDepthBuffer depthBuffer)
+    {
+        if (preparedToApply)
+        {
+            int ticks = Minecraft.getMinecraft().renderViewEntity.ticksExisted;
+            shaderInstance.apply(
+                pingPong.getScreenWidth(),
+                pingPong.getScreenHeight(),
+                ticks + partialTicks,
+                pingPong);
+        }
+    }
+
+    protected boolean isDrugShaderActive(float partialTicks, int ticks)
+    {
+        return true;
+    }
+
+    @Override
+    public boolean isActiveDrugShader()
+    {
+        return activeDrugShader;
     }
 
     public abstract void setShaderValues(float partialTicks, int ticks, IvDepthBuffer depthBuffer);

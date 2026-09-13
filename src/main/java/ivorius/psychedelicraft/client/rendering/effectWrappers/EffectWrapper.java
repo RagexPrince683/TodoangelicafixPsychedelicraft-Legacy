@@ -19,7 +19,11 @@ public interface EffectWrapper
 
     public void update();
 
+    public void prepare(float partialTicks, IvDepthBuffer depthBuffer);
+
     public void apply(float partialTicks, IvOpenGLTexturePingPong pingPong, IvDepthBuffer depthBuffer);
+
+    public boolean isActiveDrugShader();
 
     public boolean wantsDepthBuffer(float partialTicks);
 }

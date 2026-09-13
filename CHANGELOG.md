@@ -1,3 +1,28 @@
+# Suppress lens flares while drug shaders are active
+
+## Changed
+
+* The 2D effect wrappers are now prepared once for each rendered view before
+  overlays are drawn. The same prepared `shouldApply` result controls both the
+  active-drug-shader state and the shader pass, so a drug effect without a
+  shader that will actually render does not suppress lens flares.
+* Lens-flare updates and drawing are skipped whenever that shared state reports
+  an active drug shader. Suppression clears the accumulated visibility state;
+  after the final drug shader stops, the next view starts the flare from zero
+  rather than displaying stale alpha.
+* Shader wrappers are considered drug shaders by default so future drug shader
+  wrappers automatically use this path. The existing depth-of-field, heat,
+  underwater, and water-overlay wrappers opt out because their activation is
+  environmental or configuration-driven. The mixed pause-menu/drug blur wrapper
+  reports only its drug-provided blur component.
+
+## Compatibility and validation
+
+* This remains entirely in client rendering code and does not alter drug values,
+  durations, gameplay, shader programs, Angelica, or other mods.
+* Runtime visual validation is intentionally left to the developer, including
+  shader transitions, separate camera views, and Angelica framebuffer paths.
+
 # Fix drug shader corruption and restore lens flares
 
 ## Confirmed causes and fixes

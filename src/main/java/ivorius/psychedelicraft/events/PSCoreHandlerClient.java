@@ -113,6 +113,8 @@ public class PSCoreHandlerClient
 
             DrugProperties drugProperties = DrugProperties.getDrugProperties(mc.renderViewEntity);
 
+            PSRenderStates.prepare2DShaders(partialTicks);
+
             if (drugProperties != null && drugProperties.renderer != null)
                 drugProperties.renderer.renderOverlaysBeforeShaders(event.partialTicks, mc.renderViewEntity, rendererUpdateCount, mc.displayWidth, mc.displayHeight, drugProperties);
 
