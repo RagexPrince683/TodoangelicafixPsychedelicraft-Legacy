@@ -34,6 +34,9 @@ public class EffectLensFlare implements Iv2DScreenEffect
     public float sunFlareIntensity;
 
     public float actualSunAlpha = 0.0f;
+    private int lastRenderedTick = Integer.MIN_VALUE;
+    private int lastRenderedPartialTick = Integer.MIN_VALUE;
+    private World lastWorld;
 
     public void updateLensFlares()
     {
@@ -41,7 +44,15 @@ public class EffectLensFlare implements Iv2DScreenEffect
         World world = mc.theWorld;
         EntityLivingBase renderEntity = mc.renderViewEntity;
 
-        if (renderEntity != null && world != null)
+        if (world != lastWorld)
+        {
+            actualSunAlpha = 0.0f;
+            lastRenderedTick = Integer.MIN_VALUE;
+            lastRenderedPartialTick = Integer.MIN_VALUE;
+            lastWorld = world;
+        }
+
+        if (renderEntity != null && world != null && sunFlareIntensity > 0.0f)
         {
             float sunSizeRadians = -5.0f / 180.0f * 3.1315926f;
             float sunWidth = 20.0f;
@@ -86,15 +97,37 @@ public class EffectLensFlare implements Iv2DScreenEffect
         World world = mc.theWorld;
         EntityLivingBase renderEntity = mc.renderViewEntity;
 
+        if (world == null || renderEntity == null || screenWidth <= 0 || screenHeight <= 0
+            || actualSunAlpha <= 0.0f || sunFlareIntensity <= 0.0f)
+        {
+            return;
+        }
+
+        int tick = mc.ingameGUI.getUpdateCounter();
+        int partialTick = Float.floatToIntBits(partialTicks);
+        if (tick == lastRenderedTick && partialTick == lastRenderedPartialTick)
+        {
+            return;
+        }
+        lastRenderedTick = tick;
+        lastRenderedPartialTick = partialTick;
+
         float sunRadians = world.getCelestialAngleRadians(partialTicks);
 
         Vector3f sunVecCenter = new Vector3f(-MathHelper.sin(sunRadians) * 120.0f, MathHelper.cos(sunRadians) * 120.0f, 0.0f);
 
-        if (actualSunAlpha > 0.0f)
+        RenderStateGuard state = RenderStateGuard.capture();
+        try
         {
             float genSize = screenWidth > screenHeight ? screenWidth : screenHeight;
 
             Vector3f sunPositionOnScreen = PsycheMatrixHelper.projectPointCurrentView(sunVecCenter, partialTicks);
+
+            if (!isFinite(sunPositionOnScreen.x) || !isFinite(sunPositionOnScreen.y)
+                || !isFinite(sunPositionOnScreen.z) || sunPositionOnScreen.z <= 0.0f)
+            {
+                return;
+            }
 
             Vector3f normSunPos = new Vector3f();
             sunPositionOnScreen.normalise(normSunPos);
@@ -127,7 +160,7 @@ public class EffectLensFlare implements Iv2DScreenEffect
                     float flareCenterX = screenCenterX + xDist * sunFlareInfluences[i];
                     float flareCenterY = screenCenterY + yDist * sunFlareInfluences[i];
 
-                    GL11.glColor4f((float) color.xCoord - 0.1f, (float) color.yCoord - 0.1f, (float) color.zCoord - 0.1f, (alpha * i == 8 ? 1.0f : 0.5f) * actualSunAlpha * sunFlareIntensity);
+                    GL11.glColor4f((float) color.xCoord - 0.1f, (float) color.yCoord - 0.1f, (float) color.zCoord - 0.1f, (i == 8 ? 1.0f : 0.5f) * alpha * actualSunAlpha * sunFlareIntensity);
 
                     mc.renderEngine.bindTexture(sunFlareTextures[i]);
                     var3.startDrawingQuads();
@@ -174,8 +207,10 @@ public class EffectLensFlare implements Iv2DScreenEffect
             }
         }
 
-        // Reset
-        GL11.glDisable(GL11.GL_BLEND);
+        finally
+        {
+            state.restore();
+        }
     }
 
     @Override
@@ -196,6 +231,14 @@ public class EffectLensFlare implements Iv2DScreenEffect
     @Override
     public void destruct()
     {
+        actualSunAlpha = 0.0f;
+        lastRenderedTick = Integer.MIN_VALUE;
+        lastRenderedPartialTick = Integer.MIN_VALUE;
+        lastWorld = null;
+    }
 
+    private static boolean isFinite(float value)
+    {
+        return !Float.isNaN(value) && !Float.isInfinite(value);
     }
 }

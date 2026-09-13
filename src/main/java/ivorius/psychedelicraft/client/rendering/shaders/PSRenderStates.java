@@ -12,6 +12,7 @@ import ivorius.psychedelicraft.client.rendering.EntityFakeSun;
 import ivorius.psychedelicraft.client.rendering.GLStateProxy;
 import ivorius.psychedelicraft.client.rendering.PSAccessHelperClient;
 import ivorius.psychedelicraft.client.rendering.PsycheShadowHelper;
+import ivorius.psychedelicraft.client.rendering.RenderStateGuard;
 import ivorius.psychedelicraft.client.rendering.effectWrappers.*;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.OpenGlHelper;
@@ -19,7 +20,6 @@ import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.texture.ITextureObject;
 import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.client.resources.IResource;
-import net.minecraft.client.shader.Framebuffer;
 import net.minecraft.util.ResourceLocation;
 import org.apache.commons.io.IOUtils;
 import org.lwjgl.opengl.GL11;
@@ -271,6 +271,7 @@ public class PSRenderStates
         deleteRealtimeCacheTexture();
 
         realtimePingPong = new IvOpenGLTexturePingPong(Psychedelicraft.logger);
+        realtimePingPong.setParentFrameBuffer(getMCFBO());
         realtimePingPong.setScreenSize(Minecraft.getMinecraft().displayWidth, Minecraft.getMinecraft().displayHeight);
         realtimePingPong.initialize(!bypassPingPongBuffer);
     }
@@ -486,10 +487,7 @@ public class PSRenderStates
 
     public static int getMCFBO()
     {
-        Minecraft mc = Minecraft.getMinecraft();
-        Framebuffer framebuffer = mc.getFramebuffer();
-
-        return (OpenGlHelper.isFramebufferEnabled() && framebuffer != null && framebuffer.framebufferObject >= 0) ? framebuffer.framebufferObject : 0;
+        return RenderStateGuard.getBoundFramebuffer();
     }
 
     public static void postRender(float ticks, float partialTicks)
@@ -507,16 +505,24 @@ public class PSRenderStates
         int screenWidth = mc.displayWidth;
         int screenHeight = mc.displayHeight;
 
-        IvOpenGLHelper.setUpOpenGLStandard2D(screenWidth, screenHeight);
-        GL11.glColor3f(1.0f, 1.0f, 1.0f);
+        RenderStateGuard state = RenderStateGuard.capture();
+        try
+        {
+            realtimePingPong.setParentFrameBuffer(getMCFBO());
+            IvOpenGLHelper.setUpOpenGLStandard2D(screenWidth, screenHeight);
+            GL11.glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
 
-        realtimePingPong.setParentFrameBuffer(getMCFBO());
-        realtimePingPong.preTick(screenWidth, screenHeight);
+            realtimePingPong.preTick(screenWidth, screenHeight);
 
-        for (EffectWrapper effectWrapper : effectWrappers)
-            effectWrapper.apply(partialTicks, realtimePingPong, didDepthPass ? depthBuffer : null);
+            for (EffectWrapper effectWrapper : effectWrappers)
+                effectWrapper.apply(partialTicks, realtimePingPong, didDepthPass ? depthBuffer : null);
 
-        realtimePingPong.postTick();
+            realtimePingPong.postTick();
+        }
+        finally
+        {
+            state.restore();
+        }
 
         //IvOpenGLHelper.checkGLError(Psychedelicraft.logger, "2D Shaders");
     }
