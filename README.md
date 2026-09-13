@@ -6,6 +6,21 @@
 
 ## Angelica rendering compatibility
 
+Drug simulation and rendering are separate. Once Minecraft and Angelica have
+completed a view (including terrain, sky, weather, hand placement, and the
+pre-shader overlays), Psychedelicraft captures that view exactly once. It runs
+world-wave/fractal/pulse distortion first, followed by environmental distortion,
+color, blur, bloom, double-vision, noise, and digital passes. HUD and post-shader
+drug overlays retain their existing later placement.
+
+Psychedelicraft owns two reusable color textures, their intermediate framebuffer,
+and its shader programs. Minecraft or Angelica continues to own the captured
+scene, final destination, and depth attachment. A pass always samples one owned
+texture while drawing to the other; only a completely successful chain is
+composed back to the incoming destination. No drug program remains active while
+world geometry is submitted, and no private depth pass recursively renders the
+world.
+
 Psychedelicraft's screen effects preserve the framebuffer, shader, viewport,
 matrix, texture-unit, texture-binding, blend, depth, alpha, and color state that
 was active when each effect began. The post-processing pipeline uses reusable
