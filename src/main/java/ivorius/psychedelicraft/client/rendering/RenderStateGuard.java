@@ -32,7 +32,9 @@ public final class RenderStateGuard
         program = GL11.glGetInteger(GL20.GL_CURRENT_PROGRAM);
 
         GL11.glPushAttrib(GL11.GL_ALL_ATTRIB_BITS);
-        GL11.glPushClientAttrib(GL11.GL_CLIENT_ALL_ATTRIB_BITS);
+        // Tessellator changes the enabled client arrays and their pointer bindings.
+        // Pixel-store state is not touched by the guarded screen effects.
+        GL11.glPushClientAttrib(GL11.GL_CLIENT_VERTEX_ARRAY_BIT);
         pushMatrix(GL11.GL_TEXTURE);
         pushMatrix(GL11.GL_PROJECTION);
         pushMatrix(GL11.GL_MODELVIEW);
