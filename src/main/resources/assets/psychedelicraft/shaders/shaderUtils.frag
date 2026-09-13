@@ -1,3 +1,10 @@
+uniform vec2 sceneTexelMin;
+uniform vec2 sceneTexelMax;
+
+vec2 clampSceneUV(vec2 uv)
+{
+	return clamp(uv, sceneTexelMin, sceneTexelMax);
+}
 
 vec3 getRotatedColor(vec3 color, float rot)
 {
@@ -82,4 +89,3 @@ vec4 reducePalette(vec4 color, float maxCol)
 {
     return ceil(color * maxCol - 0.5) / maxCol;
 }
-

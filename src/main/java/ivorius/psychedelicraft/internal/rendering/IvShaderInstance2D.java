@@ -33,6 +33,11 @@ public abstract class IvShaderInstance2D extends IvShaderInstance implements Iv2
     public abstract void apply(int screenWidth, int screenHeight, float ticks, IvOpenGLTexturePingPong pingPong);
 
     public void drawFullScreen(int screenWidth, int screenHeight, IvOpenGLTexturePingPong pingPong) {
+        float texelWidth = 1.0f / pingPong.getScreenWidth();
+        float texelHeight = 1.0f / pingPong.getScreenHeight();
+        setUniformFloats("sceneTexelMin", texelWidth * 0.5f, texelHeight * 0.5f);
+        setUniformFloats("sceneTexelMax", 1.0f - texelWidth * 0.5f, 1.0f - texelHeight * 0.5f);
+
         pingPong.pingPong();
         IvRenderHelper.drawRectFullScreen(screenWidth, screenHeight);
     }

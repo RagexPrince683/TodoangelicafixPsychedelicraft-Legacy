@@ -1,3 +1,29 @@
+# Fix east-facing drug shader scene repetition
+
+## Fixed
+
+* Confirmed the horizontal terrain copy came from the double-vision pass creating
+  displaced horizontal samples outside the captured image. The distortion-map
+  pass had the same unsafe out-of-range scene-sampling behavior.
+  The owned textures were intended to clamp, but no shader-side texel-safe bound
+  prevented an externally changed wrap state from sampling the opposite edge.
+* Scene coordinates in both displacement passes now stop at the centers of the
+  outermost source texels. Distortion remains active within the captured image,
+  while invalid strengths, translations, and double-vision offsets are rejected
+  or bounded before they can affect sampling.
+* Ping-pong scene textures explicitly receive `GL_CLAMP_TO_EDGE` after storage is
+  allocated and whenever they are rebound, including after viewport-driven
+  recreation. The source dimensions continue to be the incoming viewport width
+  and height, independently, and capture continues to honor its nonzero origin.
+* Lens-flare suppression now also zeros the effect's intensity before returning,
+  in addition to clearing visibility/world state and skipping update, projection,
+  overlay drawing, and the unregistered post-process application path.
+
+## Runtime validation
+
+* Runtime visual validation remains for the developer, particularly east/sun
+  camera headings, resizing, shader transitions, and Angelica shader packs.
+
 # Suppress lens flares while drug shaders are active
 
 ## Changed

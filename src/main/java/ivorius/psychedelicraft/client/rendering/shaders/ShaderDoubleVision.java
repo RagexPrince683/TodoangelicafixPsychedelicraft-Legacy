@@ -39,11 +39,17 @@ public class ShaderDoubleVision extends IvShaderInstance2D
         }
 
         setUniformFloats("totalAlpha", doubleVision);
-        setUniformFloats("distance", doubleVisionDistance);
-        setUniformFloats("stretch", 1.0f + doubleVision);
+        float safeDoubleVision = finiteOrZero(doubleVision);
+        setUniformFloats("distance", finiteOrZero(doubleVisionDistance));
+        setUniformFloats("stretch", 1.0f + safeDoubleVision);
 
         drawFullScreen(screenWidth, screenHeight, pingPong);
 
         stopUsingShader();
+    }
+
+    private static float finiteOrZero(float value)
+    {
+        return Float.isNaN(value) || Float.isInfinite(value) ? 0.0f : value;
     }
 }

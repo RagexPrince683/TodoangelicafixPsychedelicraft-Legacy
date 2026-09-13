@@ -147,8 +147,6 @@ public class DrugRenderer implements IDrugRenderer
 
     public void renderOverlaysBeforeShaders(float partialTicks, EntityLivingBase entity, int updateCounter, int width, int height, DrugProperties drugProperties)
     {
-        effectLensFlare.sunFlareIntensity = PSRenderStates.sunFlareIntensity;
-
         if (PSRenderStates.hasActiveDrugShader())
         {
             // Angelica composes these shaders after the world, so flares cannot safely share that frame.
@@ -156,6 +154,7 @@ public class DrugRenderer implements IDrugRenderer
             return;
         }
 
+        effectLensFlare.sunFlareIntensity = PSRenderStates.sunFlareIntensity;
         effectLensFlare.updateLensFlares();
 
         if (effectLensFlare.shouldApply(updateCounter + partialTicks))
