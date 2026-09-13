@@ -30,7 +30,7 @@ public class WrapperDigitalPD extends ShaderWrapper<ShaderDigitalDepth>
     @Override
     public void setShaderValues(float partialTicks, int ticks, IvDepthBuffer depthBuffer)
     {
-        DrugProperties drugProperties = DrugProperties.getDrugProperties(Minecraft.getMinecraft().renderViewEntity);
+        DrugProperties drugProperties = PSRenderStates.getViewDrugProperties();
 
         if (drugProperties != null && depthBuffer != null)
         {
@@ -57,7 +57,7 @@ public class WrapperDigitalPD extends ShaderWrapper<ShaderDigitalDepth>
     @Override
     public boolean wantsDepthBuffer(float partialTicks)
     {
-        DrugProperties drugProperties = DrugProperties.getDrugProperties(Minecraft.getMinecraft().renderViewEntity);
+        DrugProperties drugProperties = PSRenderStates.getViewDrugProperties();
 
         return drugProperties != null && drugProperties.getDrugValue("Zero") > 0.0;
     }

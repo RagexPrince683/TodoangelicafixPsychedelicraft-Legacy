@@ -1,3 +1,59 @@
+# Rewrite drug rendering as an isolated per-view pass chain
+
+## Changed
+
+* Replaced the world-wide `ShaderMain` activation and recursive depth/shadow
+  rerenders with one post-world capture and an ordered, reusable two-target pass
+  chain. Minecraft or Angelica owns the incoming scene, destination framebuffer,
+  and depth; Psychedelicraft owns only its two color textures, intermediate FBO,
+  and shader programs.
+* Added an immutable effect snapshot for each rendered view. The snapshot reads
+  existing drug and hallucination values without changing dose, decay, commands,
+  packets, or synchronization, and controls pass preparation and lens-flare
+  suppression for that same view.
+* Migrated the old geometry shader's big-wave, small-wave, wiggle, distant-world,
+  surface-fractal, pulse, and contrast visuals to a bounded screen-space
+  distortion pass. Existing heat, underwater, wet-screen, color rotation,
+  desaturation, saturation, motion blur, blur, depth-of-field fallback, bloom,
+  colored bloom, double vision, blur-noise, and digital passes remain in their
+  established order after it.
+* Restored read and draw buffer selections explicitly after restoring framebuffer
+  bindings. This complements the existing program, viewport, texture, matrix,
+  fixed-function, and vertex-state restoration required by Angelica's cache.
+
+## Confirmed defects removed
+
+* The retired renderer installed a Psychedelicraft GLSL program across unrelated
+  terrain, sky, entity, and weather submissions and recursively rendered the
+  world for private depth data. Its vertex shader mixed object coordinates,
+  eye-space distance, and clip-space coordinates, then modified clip `w`; those
+  assumptions could displace or invalidate geometry according to camera heading.
+* Earlier framebuffer capture also allowed independently bound read/draw targets
+  and incomplete intermediates. The replacement captures the completed incoming
+  draw target, reads its selected color buffer, never samples its active output
+  attachment, and publishes an intermediate only after every selected pass
+  succeeds.
+
+## Compatibility and validation
+
+* The design follows Angelica's `AngelicaGLStateManagerService.glBindFramebuffer`
+  and `glUseProgram`, `GlFramebuffer.bindAsReadBuffer`/`bindAsDrawBuffer`,
+  `FixedFunctionWorldRenderingPipeline.beginLevelRendering`, and final/composite
+  framebuffer handling. `REFERENCEFOLDER/AngelicaSRC` remains audit-only.
+* `/drug Developer RedShrooms set 1000` and `/drug Developer Cannabis set 1000`
+  use the same per-view snapshot and pass chain. No strength is reduced to mask
+  rendering defects, and lens flares are reset and suppressed before their draw
+  whenever the snapshot selects any drug shader.
+* Bright horizon bands, east/sun-facing displaced fragments, frozen regions,
+  white squares, flicker, and growing brightness are the reported symptoms this
+  ownership rewrite addresses. Texture wrapping, framebuffer selection, shader
+  state, and invalid geometry were all audited; display synchronization tearing
+  is not used as an explanation.
+* Compilation was intentionally not run under the task's no-binary instruction.
+  Runtime appearance remains unverified, including Angelica with and without a
+  shaderpack, nested/portal views, viewport offsets, resize and GUI-scale changes,
+  extreme Developer doses, and transitions into and out of drug effects.
+
 # Fix east-facing drug shader scene repetition
 
 ## Fixed

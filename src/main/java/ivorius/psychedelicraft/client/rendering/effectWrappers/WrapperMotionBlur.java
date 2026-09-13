@@ -23,7 +23,7 @@ public class WrapperMotionBlur extends ScreenEffectWrapper<EffectMotionBlur>
     @Override
     public void setScreenEffectValues(float partialTicks, int ticks)
     {
-        DrugProperties drugProperties = DrugProperties.getDrugProperties(Minecraft.getMinecraft().renderViewEntity);
+        DrugProperties drugProperties = PSRenderStates.getViewDrugProperties();
 
         if (PSRenderStates.doMotionBlur && drugProperties != null)
             screenEffect.motionBlur = drugProperties.hallucinationManager.getMotionBlur(drugProperties, partialTicks);
