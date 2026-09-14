@@ -30,7 +30,7 @@ public class WrapperHeatDistortion extends ShaderWrapper<ShaderHeatDistortions>
     @Override
     public void setShaderValues(float partialTicks, int ticks, IvDepthBuffer depthBuffer)
     {
-        DrugProperties drugProperties = PSRenderStates.getViewDrugProperties();
+        DrugProperties drugProperties = DrugProperties.getDrugProperties(Minecraft.getMinecraft().renderViewEntity);
 
         if (PSRenderStates.doHeatDistortion && drugProperties != null && depthBuffer != null)
         {
@@ -63,7 +63,7 @@ public class WrapperHeatDistortion extends ShaderWrapper<ShaderHeatDistortions>
     @Override
     public boolean wantsDepthBuffer(float partialTicks)
     {
-        DrugProperties drugProperties = PSRenderStates.getViewDrugProperties();
+        DrugProperties drugProperties = DrugProperties.getDrugProperties(Minecraft.getMinecraft().renderViewEntity);
 
         if (drugProperties != null)
         {

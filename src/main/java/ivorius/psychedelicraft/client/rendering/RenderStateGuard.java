@@ -114,8 +114,6 @@ public final class RenderStateGuard
                 OpenGlHelper.func_153171_g(OpenGlHelper.field_153198_e, drawFramebuffer);
             }
         }
-        GL11.glDrawBuffer(drawBuffer);
-        GL11.glReadBuffer(readBuffer);
         for (int unit = 0; unit < TRACKED_TEXTURE_UNITS; unit++)
         {
             OpenGlHelper.setActiveTexture(OpenGlHelper.defaultTexUnit + unit);

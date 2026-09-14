@@ -5,8 +5,6 @@
 
 package ivorius.psychedelicraft.client.rendering.effectWrappers;
 
-import ivorius.psychedelicraft.client.rendering.shaders.PSRenderStates;
-
 import ivorius.psychedelicraft.internal.rendering.IvDepthBuffer;
 import ivorius.psychedelicraft.Psychedelicraft;
 import ivorius.psychedelicraft.client.ClientProxy;
@@ -30,7 +28,7 @@ public class WrapperBlur extends ShaderWrapper<ShaderBlur>
     @Override
     public void setShaderValues(float partialTicks, int ticks, IvDepthBuffer depthBuffer)
     {
-        DrugProperties drugProperties = PSRenderStates.getViewDrugProperties();
+        DrugProperties drugProperties = DrugProperties.getDrugProperties(Minecraft.getMinecraft().renderViewEntity);
 
         if (drugProperties != null)
         {

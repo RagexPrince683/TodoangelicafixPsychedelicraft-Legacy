@@ -92,11 +92,25 @@ public class PSCoreHandlerClient
 
             PSRenderStates.preRender(ticks);
 
-            // World geometry is owned by Minecraft/Angelica. Drug effects are now
-            // applied exactly once to the completed view in the Post event.
+            for (String pass : PSRenderStates.getRenderPasses(partialTicks))
+            {
+                if (!pass.equals("Default"))
+                {
+                    if (PSRenderStates.startRenderPass(pass, partialTicks, ticks))
+                    {
+                        mc.entityRenderer.renderWorld(partialTicks, 0L);
+                        PSRenderStates.endRenderPass();
+                    }
+                }
+            }
+
+            PSRenderStates.startRenderPass("Default", partialTicks, ticks);
+            PSRenderStates.preRender3D(ticks);
         }
         else if (event instanceof RenderWorldEvent.Post)
         {
+            PSRenderStates.endRenderPass();
+
             DrugProperties drugProperties = DrugProperties.getDrugProperties(mc.renderViewEntity);
 
             PSRenderStates.prepare2DShaders(partialTicks);

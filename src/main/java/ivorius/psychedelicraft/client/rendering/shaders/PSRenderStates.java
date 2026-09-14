@@ -14,8 +14,6 @@ import ivorius.psychedelicraft.client.rendering.PSAccessHelperClient;
 import ivorius.psychedelicraft.client.rendering.PsycheShadowHelper;
 import ivorius.psychedelicraft.client.rendering.PsycheMatrixHelper;
 import ivorius.psychedelicraft.client.rendering.RenderStateGuard;
-import ivorius.psychedelicraft.client.rendering.DrugEffectState;
-import ivorius.psychedelicraft.entities.drugs.DrugProperties;
 import ivorius.psychedelicraft.client.rendering.effectWrappers.*;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.OpenGlHelper;
@@ -63,7 +61,6 @@ public class PSRenderStates
 
     private static boolean activeDrugShader;
     private static boolean shaderFramePrepared;
-    private static DrugEffectState effectState;
 
     private static boolean glLightEnabled;
     private static boolean glLight0Valid;
@@ -95,7 +92,31 @@ public class PSRenderStates
     public static List<String> getRenderPasses(float partialTicks)
     {
         List<String> passes = new ArrayList<>();
+
         passes.add("Default");
+
+        if (!disableDepthBuffer && depthBuffer.isAllocated() && shaderInstanceDepth.getShaderID() > 0)
+        {
+            boolean addDepth = false;
+
+            for (EffectWrapper wrapper : effectWrappers)
+            {
+                if (wrapper.wantsDepthBuffer(partialTicks))
+                {
+                    addDepth = true;
+                    break;
+                }
+            }
+
+            if (addDepth)
+                passes.add("Depth");
+        }
+
+        if (shaderInstanceShadows.depthBuffer.isAllocated() && shaderInstanceShadows.getShaderID() > 0 && doShadows)
+        {
+            passes.add("Shadows");
+        }
+
         return passes;
     }
 
@@ -206,8 +227,18 @@ public class PSRenderStates
             Psychedelicraft.logger.error("Could not load shader utils!", ex);
         }
 
+        shaderInstance = new ShaderMain(Psychedelicraft.logger);
+        setUpShader(shaderInstance, "shader3D.vert", "shader3D.frag", utils);
+
+        shaderInstanceDepth = new ShaderMainDepth(Psychedelicraft.logger);
+        setUpShader(shaderInstanceDepth, "shader3D.vert", "shader3DDepth.frag", utils);
+
+        shaderInstanceShadows = new ShaderShadows(Psychedelicraft.logger);
+        setUpShader(shaderInstanceShadows, "shader3D.vert", "shader3DDepth.frag", utils);
+
+        //IvOpenGLHelper.checkGLError(Psychedelicraft.logger, "Allocation-Shaders");
+
         // Add order = Application order!
-        effectWrappers.add(new WrapperWorldScreen(utils));
         effectWrappers.add(new WrapperHeatDistortion(utils));
         effectWrappers.add(new WrapperUnderwaterDistortion(utils));
         effectWrappers.add(new WrapperWaterOverlay(utils));
@@ -228,9 +259,9 @@ public class PSRenderStates
         //IvOpenGLHelper.checkGLError(Psychedelicraft.logger, "Allocation-Effects");
 
         setUpRealtimeCacheTexture();
-        // World depth remains owned by Minecraft or Angelica. Screen effects do
-        // not rerender the world or clear, replace, or copy that attachment.
-        depthBuffer = null;
+        depthBuffer = new IvDepthBuffer(mc.displayWidth, mc.displayHeight, Psychedelicraft.logger);
+        if (!disableDepthBuffer)
+            depthBuffer.allocate();
 
         //IvOpenGLHelper.checkGLError(Psychedelicraft.logger, "Allocation");
     }
@@ -479,9 +510,6 @@ public class PSRenderStates
         activeDrugShader = false;
         shaderFramePrepared = true;
 
-        effectState = DrugEffectState.capture(
-            DrugProperties.getDrugProperties(Minecraft.getMinecraft().renderViewEntity), partialTicks);
-
         if (!shader2DEnabled || realtimePingPong == null)
         {
             return;
@@ -500,17 +528,7 @@ public class PSRenderStates
 
     public static boolean hasActiveDrugShader()
     {
-        return shaderFramePrepared && effectState != null && effectState.hasDrugScreenEffect && activeDrugShader;
-    }
-
-    public static DrugEffectState getEffectState()
-    {
-        return effectState;
-    }
-
-    public static DrugProperties getViewDrugProperties()
-    {
-        return effectState == null ? null : effectState.drugProperties;
+        return shaderFramePrepared && activeDrugShader;
     }
 
     public static void apply2DShaders(float ticks, float partialTicks)
@@ -568,7 +586,6 @@ public class PSRenderStates
         {
             state.restore();
             shaderFramePrepared = false;
-            effectState = null;
         }
 
         //IvOpenGLHelper.checkGLError(Psychedelicraft.logger, "2D Shaders");
@@ -614,7 +631,6 @@ public class PSRenderStates
         effectWrappers.clear();
         activeDrugShader = false;
         shaderFramePrepared = false;
-        effectState = null;
 
         if (depthBuffer != null)
             depthBuffer.deallocate();

@@ -30,7 +30,7 @@ public class WrapperDigitalMD extends ShaderWrapper<ShaderDigital>
     @Override
     public void setShaderValues(float partialTicks, int ticks, IvDepthBuffer depthBuffer)
     {
-        DrugProperties drugProperties = PSRenderStates.getViewDrugProperties();
+        DrugProperties drugProperties = DrugProperties.getDrugProperties(Minecraft.getMinecraft().renderViewEntity);
 
         if (drugProperties != null)
         {
