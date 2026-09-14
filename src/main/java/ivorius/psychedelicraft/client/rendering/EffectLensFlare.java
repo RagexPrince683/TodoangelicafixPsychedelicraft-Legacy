@@ -220,7 +220,6 @@ public class EffectLensFlare implements Iv2DScreenEffect
 
     public void suppress()
     {
-        sunFlareIntensity = 0.0f;
         actualSunAlpha = 0.0f;
         lastWorld = null;
     }

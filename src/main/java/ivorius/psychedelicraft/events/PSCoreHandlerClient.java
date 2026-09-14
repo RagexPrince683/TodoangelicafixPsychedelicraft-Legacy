@@ -91,6 +91,7 @@ public class PSCoreHandlerClient
 //            setPlayerAngles(partialTicks);
 
             PSRenderStates.preRender(ticks);
+            PSRenderStates.prepare2DShaders(partialTicks);
 
             // World geometry is owned by Minecraft/Angelica. Drug effects are now
             // applied exactly once to the completed view in the Post event.
@@ -99,12 +100,21 @@ public class PSCoreHandlerClient
         {
             DrugProperties drugProperties = DrugProperties.getDrugProperties(mc.renderViewEntity);
 
-            PSRenderStates.prepare2DShaders(partialTicks);
+            try
+            {
+                // Prepare again because nested world renders may have temporarily
+                // replaced wrapper inputs while this view was being rendered.
+                PSRenderStates.prepare2DShaders(partialTicks);
 
-            if (drugProperties != null && drugProperties.renderer != null)
-                drugProperties.renderer.renderOverlaysBeforeShaders(event.partialTicks, mc.renderViewEntity, rendererUpdateCount, mc.displayWidth, mc.displayHeight, drugProperties);
+                if (drugProperties != null && drugProperties.renderer != null)
+                    drugProperties.renderer.renderOverlaysBeforeShaders(event.partialTicks, mc.renderViewEntity, rendererUpdateCount, mc.displayWidth, mc.displayHeight, drugProperties);
 
-            PSRenderStates.postRender(ticks, partialTicks);
+                PSRenderStates.postRender(ticks, partialTicks);
+            }
+            finally
+            {
+                PSRenderStates.finishView();
+            }
         }
     }
 

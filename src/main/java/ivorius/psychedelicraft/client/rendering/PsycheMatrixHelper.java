@@ -22,6 +22,8 @@ import org.lwjgl.opengl.GL11;
 
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
@@ -38,6 +40,24 @@ public class PsycheMatrixHelper
     private static final int[] capturedViewport = new int[4];
     private static Entity capturedViewEntity;
     private static boolean hasCapturedWorldView;
+    private static final Deque<CapturedWorldView> outerWorldViews = new ArrayDeque<CapturedWorldView>();
+
+    public static void beginView()
+    {
+        outerWorldViews.push(new CapturedWorldView());
+        invalidateCapturedWorldView();
+    }
+
+    public static void finishView()
+    {
+        if (outerWorldViews.isEmpty())
+        {
+            invalidateCapturedWorldView();
+            return;
+        }
+
+        outerWorldViews.pop().restore();
+    }
 
     /** Captures the camera-relative matrices while Minecraft is rendering the normal world view. */
     public static void captureCurrentWorldView(Entity viewEntity)
@@ -82,7 +102,9 @@ public class PsycheMatrixHelper
 
         Vector4f eyePoint = Matrix4f.transform(
             capturedModelView,
-            new Vector4f(direction.x, direction.y, direction.z, 1.0f),
+            // The sun is already camera-relative.  A direction (w = 0) receives
+            // camera rotation but not the model-view's camera translation.
+            new Vector4f(direction.x, direction.y, direction.z, 0.0f),
             null);
         Vector4f clipPoint = Matrix4f.transform(capturedProjection, eyePoint, null);
 
@@ -224,5 +246,41 @@ public class PsycheMatrixHelper
         }
 
         return 90.0f;
+    }
+
+    private static final class CapturedWorldView
+    {
+        private final float[] modelView = storeMatrix(capturedModelView);
+        private final float[] projection = storeMatrix(capturedProjection);
+        private final int[] viewport = capturedViewport.clone();
+        private final Entity viewEntity = capturedViewEntity;
+        private final boolean valid = hasCapturedWorldView;
+
+        private void restore()
+        {
+            loadMatrix(capturedModelView, modelView);
+            loadMatrix(capturedProjection, projection);
+            System.arraycopy(viewport, 0, capturedViewport, 0, capturedViewport.length);
+            capturedViewEntity = viewEntity;
+            hasCapturedWorldView = valid;
+        }
+
+        private static float[] storeMatrix(Matrix4f matrix)
+        {
+            FloatBuffer buffer = BufferUtils.createFloatBuffer(16);
+            matrix.store(buffer);
+            buffer.flip();
+            float[] values = new float[16];
+            buffer.get(values);
+            return values;
+        }
+
+        private static void loadMatrix(Matrix4f matrix, float[] values)
+        {
+            FloatBuffer buffer = BufferUtils.createFloatBuffer(16);
+            buffer.put(values);
+            buffer.flip();
+            matrix.load(buffer);
+        }
     }
 }

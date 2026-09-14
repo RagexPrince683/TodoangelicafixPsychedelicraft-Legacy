@@ -1,3 +1,38 @@
+# Fix remaining drug shader corruption and sun lens flare regression
+
+## Confirmed renderer defects fixed
+
+* Motion blur now establishes the current ping-pong output before saving a
+  history sample and explicitly reads that output attachment. Previously it
+  copied the framebuffer's incidental read attachment before the pass began;
+  under Angelica this could save an older or unrelated image and feed displaced
+  strips, bright horizon bands, and repeated fragments into later frames.
+* Drug-pass detection now comes from the wrappers that actually prepared a pass.
+  Motion blur participates when its drug strength applies, while environmental
+  effects remain excluded. `Power`, `Zero`, and broad drug-value duplication no
+  longer stand in for pass applicability.
+* Drug suppression is prepared before world rendering, refreshed before final
+  composition, and retained until that view ends. Nested views save and restore
+  both prepared suppression state and captured world matrices.
+* Sun projection matrices are captured whenever the normal sky camera is active,
+  independently of the removed world-shader pass. The camera-relative sun is
+  transformed as a direction so camera translation is not applied twice.
+  Suppression clears visibility but no longer destroys the configured intensity,
+  allowing ordinary flares to fade back in after the final drug pass.
+* Framebuffer restoration now restores the complete indexed draw-buffer list,
+  after rebinding its owner. Motion-history and ping-pong textures use edge clamp
+  and all scene copies explicitly select their source attachment.
+
+## Scope and validation
+
+* The old terrain-wide shader and recursive depth/shadow renders remain retired;
+  the Nether portal effect remains removed. No Angelica or MCHELI classes or
+  settings are changed.
+* Runtime appearance remains unverified. In particular, east-facing and
+  sun-facing views, `/drug Developer RedShrooms set 1000`, `/drug Developer
+  Cannabis set 1000`, shader-pack final composition, nested views, and flare
+  transitions still require developer validation.
+
 # Rewrite drug rendering as an isolated per-view pass chain
 
 ## Changed

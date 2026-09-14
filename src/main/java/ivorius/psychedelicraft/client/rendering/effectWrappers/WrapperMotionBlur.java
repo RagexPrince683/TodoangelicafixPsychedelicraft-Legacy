@@ -36,4 +36,10 @@ public class WrapperMotionBlur extends ScreenEffectWrapper<EffectMotionBlur>
     {
 
     }
+
+    @Override
+    public boolean isActiveDrugShader()
+    {
+        return screenEffect.motionBlur > 0.0f;
+    }
 }

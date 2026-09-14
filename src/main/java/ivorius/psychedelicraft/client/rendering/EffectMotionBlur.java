@@ -58,20 +58,22 @@ public class EffectMotionBlur implements Iv2DScreenEffect
                 previousTicks = ticks - sampleFrequency * motionBlurCacheTextures.length;
             }
 
+            // First establish and draw the current ping-pong output.  Copying
+            // before this point sampled a stale Angelica read attachment and was
+            // the first stage that could create repeated scene strips.
+            pingPong.pingPong();
+            IvRenderHelper.drawRectFullScreen(screenWidth, screenHeight);
+
             while (previousTicks + sampleFrequency <= ticks)
             {
                 motionBlurCacheTextureIndex++;
                 motionBlurCacheTextureIndex %= motionBlurCacheTextures.length;
 
-                glBindTexture(GL_TEXTURE_2D, motionBlurCacheTextures[motionBlurCacheTextureIndex]);
-                glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, screenWidth, screenHeight);
+                pingPong.copyCurrentOutputToTexture(motionBlurCacheTextures[motionBlurCacheTextureIndex]);
                 motionBlurCacheTexturesInitialized[motionBlurCacheTextureIndex] = true;
 
                 previousTicks += sampleFrequency;
             }
-
-            pingPong.pingPong();
-            IvRenderHelper.drawRectFullScreen(screenWidth, screenHeight);
 
             glDisable(GL_ALPHA_TEST);
             glEnable(GL_BLEND);
@@ -127,6 +129,8 @@ public class EffectMotionBlur implements Iv2DScreenEffect
         {
             motionBlurCacheTextures[i] = IvOpenGLHelper.genStandardTexture();
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, (ByteBuffer) null);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
         }
 
         currentTexturesWidth = width;

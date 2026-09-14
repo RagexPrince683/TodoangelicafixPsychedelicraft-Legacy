@@ -1,6 +1,5 @@
 package ivorius.psychedelicraft.client.rendering;
 
-import ivorius.psychedelicraft.entities.drugs.Drug;
 import ivorius.psychedelicraft.entities.drugs.DrugProperties;
 
 /**
@@ -50,19 +49,9 @@ public final class DrugEffectState
         properties.hallucinationManager.applyContrastColorization(properties, contrastColor, partialTicks);
         sanitizeColor(contrastColor);
 
-        boolean active = bigWaves > 0.0f || smallWaves > 0.0f || wiggleWaves > 0.0f
+        hasDrugScreenEffect = bigWaves > 0.0f || smallWaves > 0.0f || wiggleWaves > 0.0f
             || surfaceFractal > 0.0f || distantWorldDeformation > 0.0f
             || pulseColor[3] > 0.0f || contrastColor[3] > 0.0f;
-        for (Drug drug : properties.getAllDrugs())
-        {
-            active |= drug.desaturationHallucinationStrength() > 0.0f;
-            active |= drug.superSaturationHallucinationStrength() > 0.0f;
-            active |= drug.bloomHallucinationStrength() > 0.0f;
-            active |= drug.motionBlur() > 0.0f;
-            active |= drug.doubleVision() > 0.0f;
-        }
-        hasDrugScreenEffect = active || properties.getDrugValue("Power") > 0.0f
-            || properties.getDrugValue("Zero") > 0.0f;
     }
 
     public static DrugEffectState capture(DrugProperties properties, float partialTicks)
