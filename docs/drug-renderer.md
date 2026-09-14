@@ -2,26 +2,34 @@
 
 ## Render order and ownership
 
-For every `RenderWorldEvent.Post`, `DrugEffectState` copies the current view
-entity's already-simulated effect values. This snapshot is used for pass
-selection, uniforms, and flare suppression; it is discarded after composition.
-There is no tick/frame global guard, so nested views receive independent work.
+At `RenderWorldEvent.Pre`, `DrugEffectState` copies the current view entity's
+already-simulated effect values and wrappers prepare their real applicability so
+lens-flare suppression is known before any possible flare draw. Preparation is
+refreshed at `Post` in case a nested render changed wrapper inputs, and the state
+is retained until the complete view ends. Nested views explicitly save and
+restore outer suppression state and world-view matrices; the wrappers themselves
+are shared and are therefore always prepared again before composition.
 
-The completed incoming draw framebuffer and its draw color selection are the
+The completed incoming draw framebuffer and its draw color selections are the
 scene source. The current viewport origin and dimensions define the captured
 rectangle. Psychedelicraft owns two equally sized RGBA textures and one FBO.
 Passes alternate source and destination attachments, overwrite the complete
 destination with scissor, depth, stencil and blending disabled, and clamp scene
 samples to valid texel centers. The incoming framebuffer, attachments, and depth
 are never cleared. Composition returns the last valid texture to the original
-draw framebuffer only after all passes return successfully.
+draw framebuffer only after all passes return successfully. Motion blur saves
+history after drawing the current source and explicitly reads that output
+attachment instead of relying on Angelica's inherited read selection.
 
 The order is: legacy world deformation replacement; heat; underwater; wet-screen;
 simple color effects; motion blur; Power blur; depth-of-field (non-depth fallback
 when no private depth is available); radial blur; bloom; colored bloom; double
 vision; Power noise; and Zero digital. Overlay artwork stays after the chain.
 Lens flares are outside the chain and are suppressed before flare projection or
-drawing whenever the same snapshot selects a drug shader.
+drawing whenever an actually prepared drug pass applies. Environmental passes do
+not count. World camera matrices are captured at the sky hook without depending
+on the retired 3D shader, and the camera-relative sun direction does not receive
+the model-view camera translation.
 
 ## Removed assumptions
 
@@ -39,7 +47,9 @@ The implementation was checked against the local source for
 `AngelicaGLStateManagerService`, `GLStateManager`, `GlFramebuffer`,
 `FixedFunctionWorldRenderingPipeline`, `CompositeRenderer`, and
 `FinalPassRenderer`. Their cached program operations, separate framebuffer
-bindings, and final-pass sequencing informed explicit state capture/restoration.
+bindings, world/hand sequencing, composite/final rendering, and HUD overlay path
+informed explicit state capture/restoration. Indexed draw buffers are restored
+only after their owning framebuffer has been rebound.
 Angelica itself is neither modified nor bundled.
 
 The old vertex deformations are represented in screen space because injecting a

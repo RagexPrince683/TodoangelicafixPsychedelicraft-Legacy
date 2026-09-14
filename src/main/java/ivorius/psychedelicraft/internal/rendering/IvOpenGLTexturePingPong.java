@@ -211,6 +211,29 @@ public class IvOpenGLTexturePingPong {
         configureOwnedTexture();
     }
 
+    /**
+     * Copies the image produced by the most recent ping-pong draw into a history
+     * texture.  The old motion-blur path copied whichever read attachment happened
+     * to be selected, which is not necessarily the scene under Angelica.
+     */
+    public void copyCurrentOutputToTexture(int texture) {
+        OpenGlHelper.setActiveTexture(OpenGlHelper.defaultTexUnit);
+        glBindTexture(GL_TEXTURE_2D, texture);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+        if (setupRealtimeFB) {
+            int outputBuffer = activeBuffer == 1
+                ? OpenGlHelper.field_153200_g
+                : OpenGlHelper.field_153200_g + 1;
+            glReadBuffer(outputBuffer);
+        } else {
+            bindSceneForReading();
+        }
+
+        glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, screenWidth, screenHeight);
+    }
+
     private void configureOwnedTexture() {
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);

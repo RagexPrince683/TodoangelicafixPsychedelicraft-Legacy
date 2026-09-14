@@ -24,6 +24,8 @@ public final class RenderStateGuard
     private static final int GL_READ_FRAMEBUFFER = 0x8CA8;
     private static final int GL_READ_FRAMEBUFFER_BINDING = 0x8CAA;
     private static final int GL_TEXTURE_BINDING_2D = 0x8069;
+    private static final int GL_MAX_DRAW_BUFFERS = 0x8824;
+    private static final int GL_DRAW_BUFFER0 = 0x8825;
     private static final int TRACKED_TEXTURE_UNITS = 4;
     private static final ThreadLocal<IntBuffer> VIEWPORT_BUFFER = new ThreadLocal<IntBuffer>()
     {
@@ -40,6 +42,7 @@ public final class RenderStateGuard
     private final int matrixMode;
     private final int program;
     private final int drawBuffer;
+    private final int[] drawBuffers;
     private final int readBuffer;
     private final int viewportX;
     private final int viewportY;
@@ -56,6 +59,7 @@ public final class RenderStateGuard
         matrixMode = GL11.glGetInteger(GL11.GL_MATRIX_MODE);
         program = GL11.glGetInteger(GL20.GL_CURRENT_PROGRAM);
         drawBuffer = GL11.glGetInteger(GL11.GL_DRAW_BUFFER);
+        drawBuffers = captureDrawBuffers(drawFramebuffer, drawBuffer);
         readBuffer = GL11.glGetInteger(GL11.GL_READ_BUFFER);
 
         IntBuffer viewport = VIEWPORT_BUFFER.get();
@@ -114,7 +118,7 @@ public final class RenderStateGuard
                 OpenGlHelper.func_153171_g(OpenGlHelper.field_153198_e, drawFramebuffer);
             }
         }
-        GL11.glDrawBuffer(drawBuffer);
+        restoreDrawBuffers();
         GL11.glReadBuffer(readBuffer);
         for (int unit = 0; unit < TRACKED_TEXTURE_UNITS; unit++)
         {
@@ -196,6 +200,36 @@ public final class RenderStateGuard
     {
         GL11.glMatrixMode(mode);
         GL11.glPopMatrix();
+    }
+
+    private static int[] captureDrawBuffers(int framebuffer, int firstDrawBuffer)
+    {
+        if (framebuffer == 0 || !OpenGlHelper.framebufferSupported)
+        {
+            return new int[]{firstDrawBuffer};
+        }
+
+        int count = Math.max(1, GL11.glGetInteger(GL_MAX_DRAW_BUFFERS));
+        int[] buffers = new int[count];
+        for (int index = 0; index < count; index++)
+        {
+            buffers[index] = GL11.glGetInteger(GL_DRAW_BUFFER0 + index);
+        }
+        return buffers;
+    }
+
+    private void restoreDrawBuffers()
+    {
+        if (drawFramebuffer == 0 || drawBuffers.length == 1)
+        {
+            GL11.glDrawBuffer(drawBuffer);
+            return;
+        }
+
+        IntBuffer buffers = BufferUtils.createIntBuffer(drawBuffers.length);
+        buffers.put(drawBuffers);
+        buffers.flip();
+        GL20.glDrawBuffers(buffers);
     }
 
     private static final int GL13_ACTIVE_TEXTURE = 0x84E0;

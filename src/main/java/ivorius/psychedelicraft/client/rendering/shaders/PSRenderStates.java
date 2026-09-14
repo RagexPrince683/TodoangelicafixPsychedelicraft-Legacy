@@ -28,6 +28,8 @@ import org.apache.commons.io.IOUtils;
 import org.lwjgl.opengl.GL11;
 
 import java.util.ArrayList;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.List;
 
 public class PSRenderStates
@@ -64,6 +66,7 @@ public class PSRenderStates
     private static boolean activeDrugShader;
     private static boolean shaderFramePrepared;
     private static DrugEffectState effectState;
+    private static final Deque<PreparedViewState> outerViewStates = new ArrayDeque<PreparedViewState>();
 
     private static boolean glLightEnabled;
     private static boolean glLight0Valid;
@@ -83,8 +86,12 @@ public class PSRenderStates
 
     public static void preRender(float ticks)
     {
+        outerViewStates.push(new PreparedViewState(activeDrugShader, shaderFramePrepared, effectState));
+        activeDrugShader = false;
+        shaderFramePrepared = false;
+        effectState = null;
         didDepthPass = false;
-        PsycheMatrixHelper.invalidateCapturedWorldView();
+        PsycheMatrixHelper.beginView();
     }
 
     public static void preRender3D(float ticks)
@@ -281,10 +288,9 @@ public class PSRenderStates
 
     public static void preRenderSky(float partialTicks)
     {
-        if ("Default".equals(currentRenderPass))
-        {
-            PsycheMatrixHelper.captureCurrentWorldView(Minecraft.getMinecraft().renderViewEntity);
-        }
+        // This hook runs after Minecraft has installed the world camera matrices.
+        // It no longer depends on the retired three-dimensional shader pass.
+        PsycheMatrixHelper.captureCurrentWorldView(Minecraft.getMinecraft().renderViewEntity);
 
         if (renderFakeSkybox)
         {
@@ -500,7 +506,23 @@ public class PSRenderStates
 
     public static boolean hasActiveDrugShader()
     {
-        return shaderFramePrepared && effectState != null && effectState.hasDrugScreenEffect && activeDrugShader;
+        return shaderFramePrepared && activeDrugShader;
+    }
+
+    public static void finishView()
+    {
+        PsycheMatrixHelper.finishView();
+        activeDrugShader = false;
+        shaderFramePrepared = false;
+        effectState = null;
+
+        if (!outerViewStates.isEmpty())
+        {
+            PreparedViewState outer = outerViewStates.pop();
+            activeDrugShader = outer.activeDrugShader;
+            shaderFramePrepared = outer.shaderFramePrepared;
+            effectState = outer.effectState;
+        }
     }
 
     public static DrugEffectState getEffectState()
@@ -518,6 +540,7 @@ public class PSRenderStates
         if (!shader2DEnabled || realtimePingPong == null)
         {
             shaderFramePrepared = false;
+            effectState = null;
             return;
         }
 
@@ -567,8 +590,6 @@ public class PSRenderStates
         finally
         {
             state.restore();
-            shaderFramePrepared = false;
-            effectState = null;
         }
 
         //IvOpenGLHelper.checkGLError(Psychedelicraft.logger, "2D Shaders");
@@ -615,10 +636,26 @@ public class PSRenderStates
         activeDrugShader = false;
         shaderFramePrepared = false;
         effectState = null;
+        outerViewStates.clear();
 
         if (depthBuffer != null)
             depthBuffer.deallocate();
         depthBuffer = null;
+    }
+
+    private static final class PreparedViewState
+    {
+        private final boolean activeDrugShader;
+        private final boolean shaderFramePrepared;
+        private final DrugEffectState effectState;
+
+        private PreparedViewState(boolean activeDrugShader, boolean shaderFramePrepared,
+                                  DrugEffectState effectState)
+        {
+            this.activeDrugShader = activeDrugShader;
+            this.shaderFramePrepared = shaderFramePrepared;
+            this.effectState = effectState;
+        }
     }
 
     public static void outputShaderInfo()
