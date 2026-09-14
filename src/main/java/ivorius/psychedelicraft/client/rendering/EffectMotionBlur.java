@@ -15,6 +15,7 @@ import org.lwjgl.opengl.GL11;
 import java.nio.ByteBuffer;
 
 import static org.lwjgl.opengl.GL11.*;
+import static org.lwjgl.opengl.GL12.GL_CLAMP_TO_EDGE;
 
 /**
  * Created by lukas on 21.02.14.
