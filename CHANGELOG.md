@@ -818,3 +818,9 @@ this source-only migration.
 * Render the existing flare and blindness assets with explicit GLSL sprites on Minecraft's named main destination after post composition and motion-history commit. Keep the intensity setting and occlusion/rain smoothing, preserve destination alpha, and restore blend factors/equations through Angelica's tracked calls.
 * Project the sun from the current captured camera matrices as a direction at infinity; reject behind-camera directions without applying finite far-plane clipping. Keep glare independent of the screen-effect enable toggle and suppress it in dimensions without a sky.
 * Remove the old per-entity lens-renderer initialization and alternate legacy screen-capture chain. Retained external screen/lifecycle entry points now terminate at the new backend; active frame hooks no longer prepare legacy wrappers or duplicate drug snapshots. Release glare's world/view references on unload even when screen effects are disabled.
+
+## 2026-10-02 00:39 — Rewrite the README for players and new contributors
+
+* Replace the rendering implementation diary with an overview of the mod, installation instructions, a first harvesting and drying guide, and useful player/server settings.
+* Explain how to set up development, launch a test client, build a mod JAR, and try local mods or the pinned Angelica client.
+* Correct the reality-rift default to disabled and retain concise dependency, graphics, and NEI limitations.
