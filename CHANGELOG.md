@@ -773,3 +773,48 @@ this source-only migration.
 * Source, localization, dependency configuration, and whitespace were inspected.
 * In accordance with repository instructions, no binary compilation or runtime
   launch was attempted. Runtime behavior remains unverified.
+
+## 2026-10-01 22:56 — Own completed main-view screen processing
+
+* Acquire Minecraft's completed main color attachment explicitly after the actual world-render call; validate its texture identity and dimensions instead of inheriting an arbitrary read FBO, MRT buffer, viewport size, or viewport origin.
+* Run the screen chain between two reusable textures with separate owned framebuffers, clear every destination, reset full-screen raster and texture-matrix state before every draw and final composition, and restore caller and main-framebuffer selections afterward. Keep the existing explicit bypass/no-FBO mode.
+* Isolate nested/offscreen world views, preserve main-view flare matrices, balance view scopes on render failures, and allow lens flares to compose with drug shaders.
+* Snapshot the current main-view depth before the hand depth clear. Heat uses matching owned depth when available and keeps animated distortion with uniform weighting otherwise; depth-only effects require a current matching snapshot. Remove the obsolete depth texture mode for Angelica's core profile and set DoF depth uniforms before drawing.
+* Use texel-center bounds consistently throughout screen-shader sampling without reducing effect strength, and remove duplicate world-screen bounds declarations.
+* Add disabled-by-default per-frame post-processing diagnostics and an opt-in client development run pinned to Angelica 2.1.29. Preserve dedicated-server and published dependency independence, and document the version-specific pipeline and diagnostic configuration.
+
+## 2026-10-01 23:28 — Replace the active screen chain with owned identity processing
+
+* Start the staged rendering-backend replacement with `PsychePostProcessor`, explicit context/effect contracts and two independently complete display-sized RGBA8 targets. Retire legacy screen-wrapper initialization and execution from the active world path.
+* Process the completed main attachment after Forge render-last and Angelica final composition, before vanilla hand/HUD rendering, once per main player view. Preserve Angelica shaderpack hand pixels already included in its completed image; exclude nested and changed-entity views.
+* Fully blit the current main scene into A, identity-copy A to B, and composite B once. Restore only touched state through tracked GL calls, recreate resources on resize/world/dimension/reload, and release on unload. Remove synthetic sky geometry and its depth clear from the active path.
+* Keep effects inactive during the identity phase. Reuse the post-processing enable/debug settings, report attributable stage errors and sampled progress, and provide a diagnostic-only full RGBA pixel comparison after target recreation. Document the replacement lifecycle and staged effect migration.
+
+## 2026-10-01 23:43 — Add color-only heat to the new post backend
+
+* Recreate desert shimmer with two animated noise layers, the existing biome strength and texel-center-clamped scene UVs. Remove depth from the base heat effect entirely.
+* Introduce a standalone GLSL program and owned clip-space quad. Bind the destination, raster state, source and auxiliary textures before the program/uniforms/draw; avoid fixed-function matrices, Tessellator and legacy shader plumbing.
+* Scope shader draw state explicitly, including owned VAO/buffer bindings and texture-unit sampler objects. Keep framebuffer targets and GLSL programs on separate reset lifecycles so resize does not recompile programs, and attribute diagnostics to shader setup, draw and restoration stages.
+
+## 2026-10-01 23:52 — Add owned water passes and a shared full-screen draw contract
+
+* Add slow color-only underwater waves and sliding wet-lens droplet refraction, using existing renderer strengths, timers, noise assets and separate water-distortion/overlay settings.
+* Run heat, water and droplets through one explicit shader-pass contract, alternating only the two owned scene targets and compositing the last written image once. No environmental effect reads depth or frame history.
+* Restore the single joint polygon mode in a core profile; retain separate-face restoration for compatibility profiles. Preserve programs across resize/world target recreation and avoid constructing verbose frame descriptions when diagnostics are disabled.
+
+## 2026-10-02 00:01 — Migrate drug screen effects to explicit owned passes
+
+* Sample existing drug and hallucination values into the new post context and recreate waves, fractal modulation, pulse/contrast coloration, color rotation, saturation, double vision, blur, colored/normal bloom, noisy distortion and digital effects with standalone color-only GLSL.
+* Expose separable axis/repetition passes to the processor so every draw alternates the same two owned targets. Preserve pause-menu blur fading, drug strengths, digital pixel-scale settings and the glyph atlas; all current-scene samples use texel-center bounds.
+* Replace strength-dependent noise scanning and per-frame random allocation with a fixed sampling budget and animated deterministic seeds. Preserve the lack of an active radial-blur simulation producer; retain depth-of-field configuration without activating an unverified depth source.
+
+## 2026-10-02 00:06 — Give motion blur dedicated completed-frame history
+
+* Replace the legacy multi-texture ring with one explicitly owned history target. Initialize from the current processed scene and commit only after the full effect chain and main composition finish; no environmental or color effect samples history.
+* Invalidate history on disable/re-enable, resize, resource reload, world/dimension/view changes, paused views and render gaps above 250 ms. Preserve the existing motion-blur toggle and drug inputs, with frame-time-scaled trail persistence.
+
+## 2026-10-02 00:18 — Compose current-camera glare outside scene and history ownership
+
+* Render the existing flare and blindness assets with explicit GLSL sprites on Minecraft's named main destination after post composition and motion-history commit. Keep the intensity setting and occlusion/rain smoothing, preserve destination alpha, and restore blend factors/equations through Angelica's tracked calls.
+* Project the sun from the current captured camera matrices as a direction at infinity; reject behind-camera directions without applying finite far-plane clipping. Keep glare independent of the screen-effect enable toggle and suppress it in dimensions without a sky.
+* Remove the old per-entity lens-renderer initialization and alternate legacy screen-capture chain. Retained external screen/lifecycle entry points now terminate at the new backend; active frame hooks no longer prepare legacy wrappers or duplicate drug snapshots. Release glare's world/view references on unload even when screen effects are disabled.

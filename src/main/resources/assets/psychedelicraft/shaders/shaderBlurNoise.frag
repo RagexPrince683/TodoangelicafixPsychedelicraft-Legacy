@@ -13,7 +13,7 @@ void main()
 	vec2 newTexCoords = floor((gl_TexCoord[0].st) / pixelSize) * pixelSize;
 	newTexCoords.t += (mod(randomFromSeed(seed), 1.0) - 0.5) * strength * 0.04;
 	
-    gl_FragColor = texture2D(tex0, newTexCoords);
+    gl_FragColor = texture2D(tex0, clampSceneUV(newTexCoords));
     vec4 newColor = gl_FragColor;
     
     float blurChance = strength * 0.01;
@@ -30,7 +30,7 @@ void main()
 				
 				if (randomOne < blurChance)
 				{
-					newColor = mix(newColor, texture2D(tex0, bTexCoords), 1.0 / (f * f * 0.004 + 1.0));
+					newColor = mix(newColor, texture2D(tex0, clampSceneUV(bTexCoords)), 1.0 / (f * f * 0.004 + 1.0));
 				}					
 			}
 		}

@@ -4,6 +4,8 @@ import net.minecraft.client.renderer.OpenGlHelper;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GLContext;
+import org.lwjgl.opengl.GL15;
+import org.lwjgl.opengl.GL21;
 import org.lwjgl.BufferUtils;
 
 import java.nio.IntBuffer;
@@ -12,9 +14,10 @@ import java.nio.IntBuffer;
  * Saves the compatibility-profile state touched by Psychedelicraft's screen effects.
  *
  * <p>The explicit program, framebuffer, and active-texture restoration is intentional.
- * Angelica tracks those objects outside the legacy attribute stack, while vanilla
- * normally renders into Minecraft's framebuffer. Querying the live bindings makes
- * the same code safe for both render pipelines.</p>
+ * Angelica 2.1.29's GLSMRedirector redirects this class's GL calls (including
+ * attribute/matrix stacks and OpenGlHelper framebuffer calls) to GLStateManager.
+ * Keep these ordinary calls: raw backend calls or cache bypass would split its
+ * tracked state from the driver. Program queries preserve its logical FFP program.</p>
  */
 public final class RenderStateGuard
 {
@@ -32,7 +35,8 @@ public final class RenderStateGuard
         @Override
         protected IntBuffer initialValue()
         {
-            return BufferUtils.createIntBuffer(4);
+            // LWJGL 2 requires capacity 16 even for four-component viewport queries.
+            return BufferUtils.createIntBuffer(16);
         }
     };
 
@@ -49,6 +53,7 @@ public final class RenderStateGuard
     private final int viewportWidth;
     private final int viewportHeight;
     private final int[] textureBindings = new int[TRACKED_TEXTURE_UNITS];
+    private final int unpackBuffer;
     private boolean restored;
 
     private RenderStateGuard()
@@ -61,6 +66,8 @@ public final class RenderStateGuard
         drawBuffer = GL11.glGetInteger(GL11.GL_DRAW_BUFFER);
         drawBuffers = captureDrawBuffers(drawFramebuffer, drawBuffer);
         readBuffer = GL11.glGetInteger(GL11.GL_READ_BUFFER);
+        unpackBuffer = GLContext.getCapabilities().OpenGL21
+            ? GL11.glGetInteger(GL21.GL_PIXEL_UNPACK_BUFFER_BINDING) : 0;
 
         IntBuffer viewport = VIEWPORT_BUFFER.get();
         viewport.clear();
@@ -74,6 +81,7 @@ public final class RenderStateGuard
         {
             OpenGlHelper.setActiveTexture(OpenGlHelper.defaultTexUnit + unit);
             textureBindings[unit] = GL11.glGetInteger(GL_TEXTURE_BINDING_2D);
+            if (unit == 0) pushMatrix(GL11.GL_TEXTURE);
         }
         OpenGlHelper.setActiveTexture(activeTexture);
 
@@ -81,7 +89,6 @@ public final class RenderStateGuard
         // Tessellator changes the enabled client arrays and their pointer bindings.
         // Pixel-store state is not touched by the guarded screen effects.
         GL11.glPushClientAttrib(GL11.GL_CLIENT_VERTEX_ARRAY_BIT);
-        pushMatrix(GL11.GL_TEXTURE);
         pushMatrix(GL11.GL_PROJECTION);
         pushMatrix(GL11.GL_MODELVIEW);
         GL11.glMatrixMode(matrixMode);
@@ -99,13 +106,12 @@ public final class RenderStateGuard
             return;
         }
 
+        OpenGlHelper.setActiveTexture(OpenGlHelper.defaultTexUnit);
         popMatrix(GL11.GL_TEXTURE);
+        OpenGlHelper.setActiveTexture(activeTexture);
         popMatrix(GL11.GL_PROJECTION);
         popMatrix(GL11.GL_MODELVIEW);
         GL11.glPopClientAttrib();
-        GL11.glPopAttrib();
-
-        OpenGlHelper.func_153161_d(program);
         if (OpenGlHelper.framebufferSupported)
         {
             if (supportsSeparateFramebufferBindings())
@@ -118,6 +124,9 @@ public final class RenderStateGuard
                 OpenGlHelper.func_153171_g(OpenGlHelper.field_153198_e, drawFramebuffer);
             }
         }
+        GL11.glPopAttrib();
+        GL11.glViewport(viewportX, viewportY, viewportWidth, viewportHeight);
+        OpenGlHelper.func_153161_d(program);
         restoreDrawBuffers();
         GL11.glReadBuffer(readBuffer);
         for (int unit = 0; unit < TRACKED_TEXTURE_UNITS; unit++)
@@ -126,6 +135,8 @@ public final class RenderStateGuard
             GL11.glBindTexture(GL11.GL_TEXTURE_2D, textureBindings[unit]);
         }
         OpenGlHelper.setActiveTexture(activeTexture);
+        if (GLContext.getCapabilities().OpenGL21)
+            GL15.glBindBuffer(GL21.GL_PIXEL_UNPACK_BUFFER, unpackBuffer);
         GL11.glMatrixMode(matrixMode);
         restored = true;
     }
@@ -157,7 +168,14 @@ public final class RenderStateGuard
 
     public static boolean supportsSeparateFramebufferBindings()
     {
-        return GLContext.getCapabilities().OpenGL30;
+        return GLContext.getCapabilities().OpenGL30
+            || GLContext.getCapabilities().GL_ARB_framebuffer_object;
+    }
+
+    public static void prepareTextureAllocation()
+    {
+        if (GLContext.getCapabilities().OpenGL21)
+            GL15.glBindBuffer(GL21.GL_PIXEL_UNPACK_BUFFER, 0);
     }
 
     public int getDrawBuffer()

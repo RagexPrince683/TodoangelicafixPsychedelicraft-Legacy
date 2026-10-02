@@ -10,8 +10,6 @@ uniform float surfaceFractal;
 uniform float distantWorldDeformation;
 uniform vec4 pulseColor;
 uniform vec4 contrastColor;
-uniform vec2 sceneTexelMin;
-uniform vec2 sceneTexelMax;
 
 void main()
 {
@@ -24,7 +22,7 @@ void main()
     offset += centered * sin(radius * 45.0 - ticks * 0.05) * bigWaves * 0.10;
     offset.y += sin(radius * 55.0 + ticks * 0.03) * distantWorldDeformation * radius * 0.035;
 
-    vec2 sampleUV = clamp(uv + offset, sceneTexelMin, sceneTexelMax);
+    vec2 sampleUV = clampSceneUV(uv + offset);
     vec4 color = texture2D(tex0, sampleUV);
     float fractal = sin((uv.x + uv.y) * 180.0 + ticks * 0.08) * 0.5 + 0.5;
     color.rgb = mix(color.rgb, color.rgb * (0.72 + fractal * 0.56), clamp(surfaceFractal, 0.0, 1.0));

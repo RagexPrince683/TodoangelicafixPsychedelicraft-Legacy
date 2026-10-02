@@ -40,12 +40,6 @@ public class EffectLensFlare implements Iv2DScreenEffect
 
     public void updateLensFlares()
     {
-        if (PSRenderStates.hasActiveDrugShader())
-        {
-            suppress();
-            return;
-        }
-
         Minecraft mc = Minecraft.getMinecraft();
         World world = mc.theWorld;
         EntityLivingBase renderEntity = mc.renderViewEntity;
@@ -97,17 +91,11 @@ public class EffectLensFlare implements Iv2DScreenEffect
 
     public void renderLensFlares(int screenWidth, int screenHeight, float partialTicks)
     {
-        if (PSRenderStates.hasActiveDrugShader())
-        {
-            suppress();
-            return;
-        }
-
         Minecraft mc = Minecraft.getMinecraft();
         World world = mc.theWorld;
         EntityLivingBase renderEntity = mc.renderViewEntity;
 
-        if (world == null || renderEntity == null || screenWidth <= 0 || screenHeight <= 0
+        if (!PSRenderStates.isMainView() || world == null || renderEntity == null || screenWidth <= 0 || screenHeight <= 0
             || actualSunAlpha <= 0.0f || sunFlareIntensity <= 0.0f)
         {
             return;
@@ -227,18 +215,12 @@ public class EffectLensFlare implements Iv2DScreenEffect
     @Override
     public boolean shouldApply(float ticks)
     {
-        return !PSRenderStates.hasActiveDrugShader() && sunFlareIntensity > 0.0f;
+        return PSRenderStates.isMainView() && sunFlareIntensity > 0.0f;
     }
 
     @Override
     public void apply(int screenWidth, int screenHeight, float ticks, IvOpenGLTexturePingPong pingPong)
     {
-        if (PSRenderStates.hasActiveDrugShader())
-        {
-            suppress();
-            return;
-        }
-
         pingPong.pingPong();
         IvRenderHelper.drawRectFullScreen(screenWidth, screenHeight);
 

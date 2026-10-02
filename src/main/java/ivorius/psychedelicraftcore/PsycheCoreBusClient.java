@@ -7,6 +7,8 @@ package ivorius.psychedelicraftcore;
 
 import ivorius.pscoreutils.events.*;
 import ivorius.psychedelicraft.events.PSCoreHandlerClient;
+import ivorius.psychedelicraft.client.rendering.shaders.PSRenderStates;
+import ivorius.psychedelicraft.client.rendering.post.PsychePostProcessor;
 import net.minecraft.client.audio.ISound;
 import net.minecraft.client.audio.SoundCategory;
 import net.minecraft.client.audio.SoundManager;
@@ -17,15 +19,25 @@ import net.minecraft.client.audio.SoundPoolEntry;
  */
 public class PsycheCoreBusClient
 {
+    public static void beginWorldView() { PsychePostProcessor.enterWorld(); PSRenderStates.beginWorldView(); }
+    public static void endWorldView() { PSRenderStates.endWorldView(); PsychePostProcessor.exitWorld(); }
+    public static void renderCompletedWorld(float partialTicks) { PsychePostProcessor.render(partialTicks); }
+    public static void abortWorldView() {
+        try { PSRenderStates.finishView(); }
+        finally { PsychePostProcessor.endMainCall(); }
+    }
+
     public static void preWorldRender(float partialTicks)
     {
+        PsychePostProcessor.beginMainCall();
         setPlayerAngles(partialTicks); // TODO Fix to allow cancellation later
         PsycheCoreBusCommon.EVENT_BUS.post(new RenderWorldEvent.Pre(partialTicks));
     }
 
     public static void postWorldRender(float partialTicks)
     {
-        PsycheCoreBusCommon.EVENT_BUS.post(new RenderWorldEvent.Post(partialTicks));
+        try { PsycheCoreBusCommon.EVENT_BUS.post(new RenderWorldEvent.Post(partialTicks)); }
+        finally { PsychePostProcessor.endMainCall(); }
     }
 
     public static void psycheGLEnable(int cap)

@@ -10,7 +10,7 @@ uniform vec4 worldColorization;
 
 void main()
 {
-	gl_FragColor = texture2D(tex0, gl_TexCoord[0].st);
+	gl_FragColor = texture2D(tex0, clampSceneUV(gl_TexCoord[0].st));
 	float fogCoord = texture2D(depthTex, gl_TexCoord[0].st).r;
 
 	if(redPulses > 0.0)

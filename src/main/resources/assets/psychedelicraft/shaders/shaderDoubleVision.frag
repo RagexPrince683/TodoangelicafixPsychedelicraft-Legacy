@@ -9,7 +9,7 @@ uniform float totalAlpha;
 void main()
 {
     vec2 sourceUV = clampSceneUV(gl_TexCoord[0].st);
-    gl_FragColor = texture2D(tex0, sourceUV);
+    gl_FragColor = texture2D(tex0, clampSceneUV(sourceUV));
     vec4 newColor = gl_FragColor * 0.35;
 
     float safeStretch = max(stretch, 0.0001);

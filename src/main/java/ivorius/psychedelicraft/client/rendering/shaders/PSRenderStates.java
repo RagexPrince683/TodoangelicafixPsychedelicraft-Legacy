@@ -5,12 +5,10 @@
 
 package ivorius.psychedelicraft.client.rendering.shaders;
 
-import com.google.common.base.Charsets;
 import ivorius.psychedelicraft.internal.rendering.*;
 import ivorius.psychedelicraft.Psychedelicraft;
 import ivorius.psychedelicraft.client.rendering.EntityFakeSun;
 import ivorius.psychedelicraft.client.rendering.GLStateProxy;
-import ivorius.psychedelicraft.client.rendering.PSAccessHelperClient;
 import ivorius.psychedelicraft.client.rendering.PsycheShadowHelper;
 import ivorius.psychedelicraft.client.rendering.PsycheMatrixHelper;
 import ivorius.psychedelicraft.client.rendering.RenderStateGuard;
@@ -19,12 +17,10 @@ import ivorius.psychedelicraft.entities.drugs.DrugProperties;
 import ivorius.psychedelicraft.client.rendering.effectWrappers.*;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.OpenGlHelper;
-import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.texture.ITextureObject;
 import net.minecraft.client.renderer.texture.TextureManager;
-import net.minecraft.client.resources.IResource;
 import net.minecraft.util.ResourceLocation;
-import org.apache.commons.io.IOUtils;
+import net.minecraft.entity.EntityLivingBase;
 import org.lwjgl.opengl.GL11;
 
 import java.util.ArrayList;
@@ -67,6 +63,10 @@ public class PSRenderStates
     private static boolean shaderFramePrepared;
     private static DrugEffectState effectState;
     private static final Deque<PreparedViewState> outerViewStates = new ArrayDeque<PreparedViewState>();
+    private static EntityLivingBase viewEntity;
+    private static boolean mainView;
+    private static int worldViewDepth;
+    private static float viewPartialTicks;
 
     private static boolean glLightEnabled;
     private static boolean glLight0Valid;
@@ -86,13 +86,42 @@ public class PSRenderStates
 
     public static void preRender(float ticks)
     {
-        outerViewStates.push(new PreparedViewState(activeDrugShader, shaderFramePrepared, effectState));
+        outerViewStates.push(new PreparedViewState(activeDrugShader, shaderFramePrepared, effectState,
+            viewEntity, mainView, didDepthPass, viewPartialTicks));
         activeDrugShader = false;
         shaderFramePrepared = false;
         effectState = null;
         didDepthPass = false;
+        Minecraft mc = Minecraft.getMinecraft();
+        viewEntity = mc.renderViewEntity;
+        mainView = ivorius.psychedelicraft.client.rendering.post.PsychePostProcessor.isMainView();
         PsycheMatrixHelper.beginView();
     }
+
+    public static boolean isMainView()
+    {
+        return mainView && outerViewStates.size() == 1
+            && viewEntity == Minecraft.getMinecraft().renderViewEntity;
+    }
+
+    public static void beginWorldView()
+    {
+        worldViewDepth++;
+    }
+
+    public static void endWorldView()
+    {
+        worldViewDepth--;
+    }
+
+    public static void recordPostProcessStage(String stage)
+    {
+        ivorius.psychedelicraft.client.rendering.post.PsychePostProcessor.passDiagnostic(stage);
+    }
+
+    /** Retired: the canonical post backend does not infer or capture world depth. */
+    @Deprecated
+    public static void captureWorldDepth() {}
 
     public static void preRender3D(float ticks)
     {
@@ -185,61 +214,14 @@ public class PSRenderStates
     public static void setShader2DEnabled(boolean enabled)
     {
         shader2DEnabled = enabled;
+        ivorius.psychedelicraft.client.rendering.post.PsychePostProcessor.enabled = enabled;
     }
 
     public static void allocate()
     {
-        //IvOpenGLHelper.checkGLError(Psychedelicraft.logger, "Pre-Allocation");
-
-        Minecraft mc = Minecraft.getMinecraft();
+        // Resource reload retires the old pipeline; targets are allocated only in a main-view scope.
         deallocate();
-
-        String utils = null;
-
-        try
-        {
-            IResource utilsResource = Minecraft.getMinecraft().getResourceManager().getResource(new ResourceLocation(Psychedelicraft.MODID, Psychedelicraft.filePathShaders + "shaderUtils.frag"));
-            try
-            {
-                utils = IOUtils.toString(utilsResource.getInputStream(), Charsets.UTF_8);
-            }
-            finally
-            {
-                IOUtils.closeQuietly(utilsResource.getInputStream());
-            }
-        }
-        catch (Exception ex)
-        {
-            Psychedelicraft.logger.error("Could not load shader utils!", ex);
-        }
-
-        // Add order = Application order!
-        effectWrappers.add(new WrapperWorldScreen(utils));
-        effectWrappers.add(new WrapperHeatDistortion(utils));
-        effectWrappers.add(new WrapperUnderwaterDistortion(utils));
-        effectWrappers.add(new WrapperWaterOverlay(utils));
-        effectWrappers.add(new WrapperSimpleEffects(utils));
-        effectWrappers.add(new WrapperMotionBlur());
-        effectWrappers.add(new WrapperBlur(utils));
-        effectWrappers.add(new WrapperDoF(utils));
-        effectWrappers.add(new WrapperRadialBlur(utils));
-        effectWrappers.add(new WrapperBloom(utils));
-        effectWrappers.add(new WrapperColorBloom(utils));
-        effectWrappers.add(new WrapperDoubleVision(utils));
-        effectWrappers.add(new WrapperBlurNoise(utils));
-        effectWrappers.add(new WrapperDigital(utils));
-
-        for (EffectWrapper effectWrapper : effectWrappers)
-            effectWrapper.alloc();
-
-        //IvOpenGLHelper.checkGLError(Psychedelicraft.logger, "Allocation-Effects");
-
-        setUpRealtimeCacheTexture();
-        // World depth remains owned by Minecraft or Angelica. Screen effects do
-        // not rerender the world or clear, replace, or copy that attachment.
-        depthBuffer = null;
-
-        //IvOpenGLHelper.checkGLError(Psychedelicraft.logger, "Allocation");
+        ivorius.psychedelicraft.client.rendering.post.PsychePostProcessor.reset();
     }
 
     public static void setUpShader(IvShaderInstance shader, String vertexFile, String fragmentFile, String utils)
@@ -247,23 +229,15 @@ public class PSRenderStates
         IvShaderInstanceMC.trySettingUpShader(shader, new ResourceLocation(Psychedelicraft.MODID, Psychedelicraft.filePathShaders + vertexFile), new ResourceLocation(Psychedelicraft.MODID, Psychedelicraft.filePathShaders + fragmentFile), utils);
     }
 
-    public static void setUpRealtimeCacheTexture()
-    {
-        deleteRealtimeCacheTexture();
-
-        realtimePingPong = new IvOpenGLTexturePingPong(Psychedelicraft.logger);
-        realtimePingPong.setParentFrameBuffer(getMCFBO());
-        realtimePingPong.setScreenSize(Minecraft.getMinecraft().displayWidth, Minecraft.getMinecraft().displayHeight);
-        realtimePingPong.initialize(!bypassPingPongBuffer);
+    /** Legacy lifecycle entry point terminates at the new owned backend. */
+    @Deprecated
+    public static void setUpRealtimeCacheTexture() {
+        ivorius.psychedelicraft.client.rendering.post.PsychePostProcessor.reset();
     }
 
     public static void update()
     {
-        if (Minecraft.getMinecraft().theWorld != null)
-        {
-            for (EffectWrapper effectWrapper : effectWrappers)
-                effectWrapper.update();
-        }
+        ivorius.psychedelicraft.client.rendering.post.PsychePostProcessor.clientTick();
     }
 
     public static boolean useShader(float partialTicks, float ticks, ShaderWorld shader)
@@ -290,23 +264,10 @@ public class PSRenderStates
     {
         // This hook runs after Minecraft has installed the world camera matrices.
         // It no longer depends on the retired three-dimensional shader pass.
+        if (!isMainView() || worldViewDepth != 1) return;
         PsycheMatrixHelper.captureCurrentWorldView(Minecraft.getMinecraft().renderViewEntity);
 
-        if (renderFakeSkybox)
-        {
-            setForceColorSafeMode(true);
-            float boxSize = Minecraft.getMinecraft().gameSettings.renderDistanceChunks * 16 * 0.75f;
-            float[] fogColor = PSAccessHelperClient.getFogColor();
-
-            GL11.glDisable(GL11.GL_TEXTURE_2D);
-            GL11.glColor3f(fogColor[0], fogColor[1], fogColor[2]);
-            Tessellator.instance.startDrawingQuads();
-            IvRenderHelper.renderCuboid(Tessellator.instance, -boxSize, -boxSize, -boxSize, 1.0f);
-            Tessellator.instance.draw();
-            GL11.glClear(GL11.GL_DEPTH_BUFFER_BIT);
-            GL11.glEnable(GL11.GL_TEXTURE_2D);
-            setForceColorSafeMode(false);
-        }
+        // Screen-space processing needs no synthetic sky geometry or world-depth clear.
     }
 
     public static void setEnabled(int cap, boolean enabled)
@@ -480,29 +441,17 @@ public class PSRenderStates
         apply2DShaders(ticks, partialTicks);
     }
 
-    public static void prepare2DShaders(float partialTicks)
+    public static void prepareView(float partialTicks)
     {
+        viewPartialTicks = partialTicks;
         activeDrugShader = false;
-        shaderFramePrepared = true;
-
+        shaderFramePrepared = false;
         effectState = DrugEffectState.capture(
             DrugProperties.getDrugProperties(Minecraft.getMinecraft().renderViewEntity), partialTicks);
-
-        if (!shader2DEnabled || realtimePingPong == null)
-        {
-            return;
-        }
-
-        IvDepthBuffer availableDepthBuffer = didDepthPass ? depthBuffer : null;
-        for (EffectWrapper effectWrapper : effectWrappers)
-        {
-            effectWrapper.prepare(partialTicks, availableDepthBuffer);
-            if (effectWrapper.isActiveDrugShader())
-            {
-                activeDrugShader = true;
-            }
-        }
     }
+
+    @Deprecated
+    public static void prepare2DShaders(float partialTicks) { prepareView(partialTicks); }
 
     public static boolean hasActiveDrugShader()
     {
@@ -522,6 +471,10 @@ public class PSRenderStates
             activeDrugShader = outer.activeDrugShader;
             shaderFramePrepared = outer.shaderFramePrepared;
             effectState = outer.effectState;
+            viewEntity = outer.viewEntity;
+            mainView = outer.mainView;
+            didDepthPass = outer.didDepthPass;
+            viewPartialTicks = outer.partialTicks;
         }
     }
 
@@ -535,64 +488,10 @@ public class PSRenderStates
         return effectState == null ? null : effectState.drugProperties;
     }
 
-    public static void apply2DShaders(float ticks, float partialTicks)
-    {
-        if (!shader2DEnabled || realtimePingPong == null)
-        {
-            shaderFramePrepared = false;
-            effectState = null;
-            return;
-        }
-
-        if (!shaderFramePrepared)
-        {
-            prepare2DShaders(partialTicks);
-        }
-
-        Minecraft mc = Minecraft.getMinecraft();
-
-        RenderStateGuard state = RenderStateGuard.capture();
-        try
-        {
-            int screenWidth = state.getViewportWidth();
-            int screenHeight = state.getViewportHeight();
-            if (screenWidth <= 0 || screenHeight <= 0)
-            {
-                return;
-            }
-
-            realtimePingPong.setParentFrameBuffers(
-                RenderStateGuard.getBoundDrawFramebuffer(),
-                RenderStateGuard.getBoundReadFramebuffer());
-            realtimePingPong.setParentBuffers(state.getDrawBuffer(), state.getReadBuffer());
-            realtimePingPong.setSourceViewportOrigin(state.getViewportX(), state.getViewportY());
-            OpenGlHelper.setActiveTexture(OpenGlHelper.defaultTexUnit);
-            IvOpenGLHelper.setUpOpenGLStandard2D(screenWidth, screenHeight);
-            GL11.glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
-
-            realtimePingPong.preTick(screenWidth, screenHeight);
-            boolean completed = false;
-            try
-            {
-                for (EffectWrapper effectWrapper : effectWrappers)
-                {
-                    effectWrapper.apply(partialTicks, realtimePingPong, didDepthPass ? depthBuffer : null);
-                }
-                completed = true;
-            }
-            finally
-            {
-                // Balance the ping-pong target's attribute stack and restore its
-                // parent framebuffer even when an individual effect fails.
-                realtimePingPong.postTick(completed);
-            }
-        }
-        finally
-        {
-            state.restore();
-        }
-
-        //IvOpenGLHelper.checkGLError(Psychedelicraft.logger, "2D Shaders");
+    /** Legacy external entry point; all rendering terminates at the canonical processor. */
+    @Deprecated
+    public static void apply2DShaders(float ticks, float partialTicks) {
+        ivorius.psychedelicraft.client.rendering.post.PsychePostProcessor.render(partialTicks);
     }
 
     public static int getTextureIndex(ResourceLocation loc)
@@ -648,13 +547,22 @@ public class PSRenderStates
         private final boolean activeDrugShader;
         private final boolean shaderFramePrepared;
         private final DrugEffectState effectState;
+        private final EntityLivingBase viewEntity;
+        private final boolean mainView;
+        private final boolean didDepthPass;
+        private final float partialTicks;
 
         private PreparedViewState(boolean activeDrugShader, boolean shaderFramePrepared,
-                                  DrugEffectState effectState)
+                                  DrugEffectState effectState, EntityLivingBase viewEntity,
+                                  boolean mainView, boolean didDepthPass, float partialTicks)
         {
             this.activeDrugShader = activeDrugShader;
             this.shaderFramePrepared = shaderFramePrepared;
             this.effectState = effectState;
+            this.viewEntity = viewEntity;
+            this.mainView = mainView;
+            this.didDepthPass = didDepthPass;
+            this.partialTicks = partialTicks;
         }
     }
 

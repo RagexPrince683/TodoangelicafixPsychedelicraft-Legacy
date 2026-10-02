@@ -116,18 +116,16 @@ public class PsycheMatrixHelper
         float inverseW = 1.0f / clipPoint.w;
         float normalizedX = clipPoint.x * inverseW;
         float normalizedY = clipPoint.y * inverseW;
-        float normalizedZ = clipPoint.z * inverseW;
-        if (normalizedZ < -1.0f || normalizedZ > 1.0f)
-        {
-            return null;
-        }
+        // A direction at infinity has w=0 before projection, so its projected
+        // depth lies just beyond the finite far plane. Only facing (clip w)
+        // and screen coordinates apply to celestial overlays, not depth clipping.
 
         float viewportPixelX = (normalizedX * 0.5f + 0.5f) * capturedViewport[2];
         float viewportPixelY = (normalizedY * 0.5f + 0.5f) * capturedViewport[3];
         return new Vector3f(
             capturedViewport[0] + viewportPixelX,
             overlayHeight - (capturedViewport[1] + viewportPixelY),
-            normalizedZ * 0.5f + 0.5f);
+            1.0f);
     }
 
     public static Matrix4f getCurrentProjectionMatrix(float partialTicks)

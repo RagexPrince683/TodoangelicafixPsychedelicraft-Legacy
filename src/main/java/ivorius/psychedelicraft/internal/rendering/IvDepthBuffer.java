@@ -20,6 +20,7 @@ import static org.lwjgl.opengl.GL14.*;
 import java.nio.ByteBuffer;
 
 import net.minecraft.client.renderer.OpenGlHelper;
+import ivorius.psychedelicraft.client.rendering.CompletedScene;
 
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.opengl.ARBMultitexture;
@@ -81,6 +82,17 @@ public class IvDepthBuffer {
         return setUp;
     }
 
+    /** Snapshot the main world depth before vanilla clears it to render the hand. */
+    public void captureScene(CompletedScene scene) {
+        setSize(scene.width, scene.height);
+        if (!isAllocated() && !allocate()) return;
+        scene.bindForReading();
+        OpenGlHelper.setActiveTexture(OpenGlHelper.defaultTexUnit);
+        glBindTexture(GL_TEXTURE_2D, depthTextureIndex);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE);
+        glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, scene.width, scene.height);
+    }
+
     public static int genDefaultDepthTexture(int textureWidth, int textureHeight) {
         int depthTextureIndex = glGenTextures();
         glBindTexture(GL_TEXTURE_2D, depthTextureIndex);
@@ -88,7 +100,6 @@ public class IvDepthBuffer {
         glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_DEPTH_TEXTURE_MODE, GL_INTENSITY);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_R_TO_TEXTURE);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
         glTexImage2D(
@@ -175,7 +186,6 @@ public class IvDepthBuffer {
     public static void bindTextureForSource(int glTexture, int textureIndex) {
         glBindTexture(GL_TEXTURE_2D, textureIndex);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE);
-        glTexParameteri(GL_TEXTURE_2D, GL_DEPTH_TEXTURE_MODE, GL_LUMINANCE);
 
         OpenGlHelper.setActiveTexture(glTexture);
         glBindTexture(GL_TEXTURE_2D, textureIndex);
@@ -185,7 +195,6 @@ public class IvDepthBuffer {
     public static void bindTextureForDestination(int textureIndex) {
         glBindTexture(GL_TEXTURE_2D, textureIndex);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_R_TO_TEXTURE);
-        glTexParameteri(GL_TEXTURE_2D, GL_DEPTH_TEXTURE_MODE, GL_INTENSITY);
     }
 
     public void bindTextureForSource(int glTexture) {

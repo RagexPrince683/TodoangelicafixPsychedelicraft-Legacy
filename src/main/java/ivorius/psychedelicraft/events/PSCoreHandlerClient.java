@@ -91,30 +91,12 @@ public class PSCoreHandlerClient
 //            setPlayerAngles(partialTicks);
 
             PSRenderStates.preRender(ticks);
-            PSRenderStates.prepare2DShaders(partialTicks);
-
-            // World geometry is owned by Minecraft/Angelica. Drug effects are now
-            // applied exactly once to the completed view in the Post event.
+            // PostContext samples simulation once at the completed-world stage.
         }
         else if (event instanceof RenderWorldEvent.Post)
         {
-            DrugProperties drugProperties = DrugProperties.getDrugProperties(mc.renderViewEntity);
-
-            try
-            {
-                // Prepare again because nested world renders may have temporarily
-                // replaced wrapper inputs while this view was being rendered.
-                PSRenderStates.prepare2DShaders(partialTicks);
-
-                if (drugProperties != null && drugProperties.renderer != null)
-                    drugProperties.renderer.renderOverlaysBeforeShaders(event.partialTicks, mc.renderViewEntity, rendererUpdateCount, mc.displayWidth, mc.displayHeight, drugProperties);
-
-                PSRenderStates.postRender(ticks, partialTicks);
-            }
-            finally
-            {
-                PSRenderStates.finishView();
-            }
+            // The owned post processor has already run at the completed-world stage.
+            PSRenderStates.finishView();
         }
     }
 

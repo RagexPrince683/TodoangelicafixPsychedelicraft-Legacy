@@ -23,7 +23,7 @@ void main()
     joinedTranslation *= mix(vec2(1.0), water2, noisePixel1.b);
     float safeStrength = clamp(strength, 0.0, 0.25);
     vec2 sceneUV = clampSceneUV(gl_TexCoord[0].st + joinedTranslation * safeStrength);
-    vec4 newColor = texture2D(tex0, sceneUV);
+    vec4 newColor = texture2D(tex0, clampSceneUV(sceneUV));
     
 	if (totalAlpha == 1.0)
 		gl_FragColor = newColor;

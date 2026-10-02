@@ -42,34 +42,33 @@ public class EntityRendererTransformer extends IvClassTransformerClass
         switch (methodID)
         {
             case "updateCameraAndRender":
-                AbstractInsnNode preNode = IvNodeFinder.findNode(new IvNodeMatcherLDC("level"), methodNode);
-                AbstractInsnNode postNode = IvNodeFinder.findNode(new IvNodeMatcherFieldSRG(GETSTATIC, "field_148824_g" /* shadersSupported */, "net/minecraft/client/renderer/OpenGlHelper", Type.BOOLEAN_TYPE), methodNode);
-
-                if (preNode == null)
+                List<AbstractInsnNode> worldCalls = IvNodeFinder.findNodes(new IvNodeMatcherMethodSRG(
+                    INVOKEVIRTUAL, "func_78471_a", "net/minecraft/client/renderer/EntityRenderer",
+                    getMethodDescriptor(Type.VOID_TYPE, Type.FLOAT_TYPE, Type.LONG_TYPE)), methodNode);
+                for (AbstractInsnNode call : worldCalls)
                 {
-                    printSubMethodError(className, methodID, "pre");
+                    // Bracket the actual main world call, not profiler strings or a
+                    // later shadersSupported branch. Angelica finalizes inside this call.
+                    InsnList pre = new InsnList();
+                    LabelNode worldStart = new LabelNode();
+                    LabelNode worldEnd = new LabelNode();
+                    LabelNode worldFailure = new LabelNode();
+                    pre.add(new VarInsnNode(FLOAD, 1));
+                    pre.add(new MethodInsnNode(INVOKESTATIC, "ivorius/psychedelicraftcore/PsycheCoreBusClient", "preWorldRender", getMethodDescriptor(Type.VOID_TYPE, Type.FLOAT_TYPE), false));
+                    pre.add(worldStart);
+                    methodNode.instructions.insertBefore(call, pre);
+                    InsnList post = new InsnList();
+                    post.add(worldEnd);
+                    post.add(new VarInsnNode(FLOAD, 1));
+                    post.add(new MethodInsnNode(INVOKESTATIC, "ivorius/psychedelicraftcore/PsycheCoreBusClient", "postWorldRender", getMethodDescriptor(Type.VOID_TYPE, Type.FLOAT_TYPE), false));
+                    methodNode.instructions.insert(call, post);
+                    methodNode.instructions.add(worldFailure);
+                    methodNode.instructions.add(new MethodInsnNode(INVOKESTATIC,
+                        "ivorius/psychedelicraftcore/PsycheCoreBusClient", "abortWorldView", "()V", false));
+                    methodNode.instructions.add(new InsnNode(ATHROW));
+                    methodNode.tryCatchBlocks.add(new TryCatchBlockNode(worldStart, worldEnd, worldFailure, null));
                 }
-                else
-                {
-                    InsnList list = new InsnList();
-                    list.add(new VarInsnNode(FLOAD, 1));
-                    list.add(new MethodInsnNode(INVOKESTATIC, "ivorius/psychedelicraftcore/PsycheCoreBusClient", "preWorldRender", getMethodDescriptor(Type.VOID_TYPE, Type.FLOAT_TYPE), false));
-                    methodNode.instructions.insert(preNode, list);
-                }
-
-                if (postNode == null)
-                {
-                    printSubMethodError(className, methodID, "post");
-                }
-                else
-                {
-                    InsnList list = new InsnList();
-                    list.add(new VarInsnNode(FLOAD, 1));
-                    list.add(new MethodInsnNode(INVOKESTATIC, "ivorius/psychedelicraftcore/PsycheCoreBusClient", "postWorldRender", getMethodDescriptor(Type.VOID_TYPE, Type.FLOAT_TYPE), false));
-                    methodNode.instructions.insertBefore(postNode, list);
-                }
-
-                return preNode != null && postNode != null;
+                return !worldCalls.isEmpty();
             case "orientCamera":
             {
                 InsnList list = new InsnList();
@@ -144,7 +143,40 @@ public class EntityRendererTransformer extends IvClassTransformerClass
 
                 return transformMatrixNode != null && skipOverlayNode != null;
             case "renderWorld":
-                return transformRenderWorldHand(className, methodID, methodNode);
+                if (!transformRenderWorldHand(className, methodID, methodNode)) return false;
+                List<AbstractInsnNode> renderLastCalls = IvNodeFinder.findNodes(new IvNodeMatcherMethodSRG(
+                    INVOKESTATIC, "dispatchRenderLast", "net/minecraftforge/client/ForgeHooksClient",
+                    getMethodDescriptor(Type.VOID_TYPE, Type.getObjectType("net/minecraft/client/renderer/RenderGlobal"), Type.FLOAT_TYPE)), methodNode);
+                if (renderLastCalls.isEmpty()) return false;
+                for (AbstractInsnNode call : renderLastCalls)
+                {
+                    InsnList completed = new InsnList();
+                    completed.add(new VarInsnNode(FLOAD, 1));
+                    completed.add(new MethodInsnNode(INVOKESTATIC,
+                        "ivorius/psychedelicraftcore/PsycheCoreBusClient", "renderCompletedWorld", "(F)V", false));
+                    methodNode.instructions.insert(call, completed);
+                }
+                // Direct nested renderWorld calls (minimaps/portals) do not receive
+                // updateCameraAndRender events but must still be excluded from the main view.
+                for (AbstractInsnNode node : methodNode.instructions.toArray())
+                    if (node.getOpcode() == RETURN)
+                        methodNode.instructions.insertBefore(node, new MethodInsnNode(INVOKESTATIC,
+                            "ivorius/psychedelicraftcore/PsycheCoreBusClient", "endWorldView", "()V", false));
+                LabelNode viewStart = new LabelNode();
+                LabelNode viewEnd = new LabelNode();
+                LabelNode viewFailure = new LabelNode();
+                InsnList viewEntry = new InsnList();
+                viewEntry.add(new MethodInsnNode(INVOKESTATIC,
+                    "ivorius/psychedelicraftcore/PsycheCoreBusClient", "beginWorldView", "()V", false));
+                viewEntry.add(viewStart);
+                methodNode.instructions.insert(viewEntry);
+                methodNode.instructions.add(viewEnd);
+                methodNode.instructions.add(viewFailure);
+                methodNode.instructions.add(new MethodInsnNode(INVOKESTATIC,
+                    "ivorius/psychedelicraftcore/PsycheCoreBusClient", "endWorldView", "()V", false));
+                methodNode.instructions.add(new InsnNode(ATHROW));
+                methodNode.tryCatchBlocks.add(new TryCatchBlockNode(viewStart, viewEnd, viewFailure, null));
+                return true;
             case "setupFog":
                 List<AbstractInsnNode> glFogiNodes = IvNodeFinder.findNodes(new IvNodeMatcherMethodSRG(INVOKESTATIC, "glFogi", "org/lwjgl/opengl/GL11", null), methodNode);
 

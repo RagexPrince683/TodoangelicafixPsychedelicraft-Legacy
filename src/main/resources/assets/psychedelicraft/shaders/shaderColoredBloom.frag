@@ -19,7 +19,7 @@ float influenceFromColor(vec3 color1, vec3 color2)
 
 void main()
 {
-    gl_FragColor = texture2D(tex0, gl_TexCoord[0].st);
+    gl_FragColor = texture2D(tex0, clampSceneUV(gl_TexCoord[0].st));
     vec4 newColor = gl_FragColor;
     float bloomInfluence = 0.0;
 
@@ -28,10 +28,10 @@ void main()
     for(float i = -1.0; i < 2.0; i += 2.0)
     {
         vec2 activeDirVec = i * dirVec;
-        vec3 color1 = texture2D(tex0, clamp(gl_TexCoord[0].st + 1.0 * activeDirVec, 0.0, 1.0)).rgb;
-        vec3 color2 = texture2D(tex0, clamp(gl_TexCoord[0].st + 2.0 * activeDirVec, 0.0, 1.0)).rgb;
-        vec3 color3 = texture2D(tex0, clamp(gl_TexCoord[0].st + 3.0 * activeDirVec, 0.0, 1.0)).rgb;
-        vec3 color4 = texture2D(tex0, clamp(gl_TexCoord[0].st + 4.0 * activeDirVec, 0.0, 1.0)).rgb;
+        vec3 color1 = texture2D(tex0, clampSceneUV(gl_TexCoord[0].st + 1.0 * activeDirVec)).rgb;
+        vec3 color2 = texture2D(tex0, clampSceneUV(gl_TexCoord[0].st + 2.0 * activeDirVec)).rgb;
+        vec3 color3 = texture2D(tex0, clampSceneUV(gl_TexCoord[0].st + 3.0 * activeDirVec)).rgb;
+        vec3 color4 = texture2D(tex0, clampSceneUV(gl_TexCoord[0].st + 4.0 * activeDirVec)).rgb;
         
         bloomInfluence += influenceFromColor(color1, bloomColor) * 0.028 * 2.0;
         bloomInfluence += influenceFromColor(color2, bloomColor) * 0.020 * 2.0;

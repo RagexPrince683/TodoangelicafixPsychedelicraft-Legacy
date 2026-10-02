@@ -18,7 +18,7 @@ float getPixelDensity(vec2 newUV, vec4 newColor)
 void main()
 {
     vec2 newUV = (newResolution.x > 0.0 && newResolution.y > 0.0) ? pixelate(gl_TexCoord[0].st, newResolution) : gl_TexCoord[0].st;
-    vec4 newColor = texture2D(tex0, newUV);
+    vec4 newColor = texture2D(tex0, clampSceneUV(newUV));
     
     if (saturation < 1.0)
     {
@@ -61,5 +61,5 @@ void main()
 	if (totalAlpha == 1.0)
 		gl_FragColor = newColor;
 	else
-		gl_FragColor = mix(texture2D(tex0, gl_TexCoord[0].st), newColor, totalAlpha);
+		gl_FragColor = mix(texture2D(tex0, clampSceneUV(gl_TexCoord[0].st)), newColor, totalAlpha);
 }

@@ -14,6 +14,8 @@
 package ivorius.psychedelicraft.internal.rendering;
 
 import org.apache.logging.log4j.Logger;
+import net.minecraft.client.renderer.OpenGlHelper;
+import ivorius.psychedelicraft.client.rendering.shaders.PSRenderStates;
 
 /**
  * Created by lukas on 18.02.14.
@@ -33,13 +35,20 @@ public abstract class IvShaderInstance2D extends IvShaderInstance implements Iv2
     public abstract void apply(int screenWidth, int screenHeight, float ticks, IvOpenGLTexturePingPong pingPong);
 
     public void drawFullScreen(int screenWidth, int screenHeight, IvOpenGLTexturePingPong pingPong) {
+        // Configure the destination and raster state before activating a custom
+        // program. Angelica's compatibility uniforms are uploaded at program bind;
+        // changing the matrices afterwards leaves the draw with the previous view.
+        // Program-local effect uniforms survive this suspension, including loops.
+        OpenGlHelper.func_153161_d(0);
+        pingPong.pingPong();
+        OpenGlHelper.func_153161_d(getShaderID());
         float texelWidth = 1.0f / pingPong.getScreenWidth();
         float texelHeight = 1.0f / pingPong.getScreenHeight();
         setUniformFloats("sceneTexelMin", texelWidth * 0.5f, texelHeight * 0.5f);
         setUniformFloats("sceneTexelMax", 1.0f - texelWidth * 0.5f, 1.0f - texelHeight * 0.5f);
 
-        pingPong.pingPong();
         IvRenderHelper.drawRectFullScreen(screenWidth, screenHeight);
+        PSRenderStates.recordPostProcessStage("owned-pass/drawn");
     }
 
     @Override

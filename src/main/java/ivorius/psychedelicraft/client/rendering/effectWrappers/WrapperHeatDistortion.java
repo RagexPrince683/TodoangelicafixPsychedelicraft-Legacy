@@ -32,11 +32,12 @@ public class WrapperHeatDistortion extends ShaderWrapper<ShaderHeatDistortions>
     {
         DrugProperties drugProperties = PSRenderStates.getViewDrugProperties();
 
-        if (PSRenderStates.doHeatDistortion && drugProperties != null && depthBuffer != null)
+        shaderInstance.depthTextureIndex = 0;
+        if (PSRenderStates.doHeatDistortion && drugProperties != null && drugProperties.renderer != null)
         {
             float heatDistortion = drugProperties.renderer.getCurrentHeatDistortion();
 
-            shaderInstance.depthTextureIndex = depthBuffer.getDepthTextureIndex();
+            if (depthBuffer != null) shaderInstance.depthTextureIndex = depthBuffer.getDepthTextureIndex();
             shaderInstance.noiseTextureIndex = PSRenderStates.getTextureIndex(heatDistortionNoiseTexture);
 
             shaderInstance.strength = heatDistortion;

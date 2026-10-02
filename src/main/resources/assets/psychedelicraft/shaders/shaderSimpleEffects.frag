@@ -11,7 +11,7 @@ uniform float desaturation;
 
 void main()
 {
-	gl_FragColor = texture2D(tex0, gl_TexCoord[0].st);
+	gl_FragColor = texture2D(tex0, clampSceneUV(gl_TexCoord[0].st));
 
 	if(slowColorRotation > 0.0)
 		gl_FragColor.rgb = mix(gl_FragColor.rgb, getRotatedColor(gl_FragColor.rgb, mod(ticks, 300.0) / 300.0), slowColorRotation / 2.0);

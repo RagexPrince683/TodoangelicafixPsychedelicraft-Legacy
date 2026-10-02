@@ -32,18 +32,24 @@ public class ShaderHeatDistortions extends IvShaderInstance2D
     @Override
     public boolean shouldApply(float ticks)
     {
-        return strength > 0.0f && depthTextureIndex > 0 && noiseTextureIndex > 0 && super.shouldApply(ticks);
+        return strength > 0.0f && noiseTextureIndex > 0 && super.shouldApply(ticks);
     }
 
     @Override
     public void apply(int screenWidth, int screenHeight, float ticks, IvOpenGLTexturePingPong pingPong)
     {
         useShader();
+        PSRenderStates.recordPostProcessStage("heat/program");
 
         OpenGlHelper.setActiveTexture(OpenGlHelper.lightmapTexUnit + 2);
         glBindTexture(GL_TEXTURE_2D, noiseTextureIndex);
         OpenGlHelper.setActiveTexture(OpenGlHelper.defaultTexUnit);
-        IvDepthBuffer.bindTextureForSource(OpenGlHelper.lightmapTexUnit + 1, depthTextureIndex);
+        PSRenderStates.recordPostProcessStage("heat/noise");
+        if (depthTextureIndex > 0)
+            IvDepthBuffer.bindTextureForSource(OpenGlHelper.lightmapTexUnit + 1, depthTextureIndex);
+        PSRenderStates.recordPostProcessStage("heat/depth");
+        setUniformInts("useDepth", depthTextureIndex > 0 ? 1 : 0);
+        PSRenderStates.recordPostProcessStage("heat/useDepth");
 
         for (int i = 0; i < 3; i++)
         {
@@ -54,6 +60,7 @@ public class ShaderHeatDistortions extends IvShaderInstance2D
         setUniformFloats("totalAlpha", 1.0f);
         setUniformFloats("ticks", ticks * wobbleSpeed);
         setUniformFloats("strength", strength);
+        PSRenderStates.recordPostProcessStage("heat/uniforms");
 
         drawFullScreen(screenWidth, screenHeight, pingPong);
 

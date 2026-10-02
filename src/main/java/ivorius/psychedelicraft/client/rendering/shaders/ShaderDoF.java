@@ -52,6 +52,7 @@ public class ShaderDoF extends IvShaderInstance2D
         setUniformInts("tex", 0);
 
         setUniformFloats("pixelSize", 1.0f / screenWidth, 1.0f / screenHeight);
+        setUniformFloats("depthRange", zNear, zFar);
 
         setUniformFloats("focalPointNear", focalPointNear);
         setUniformFloats("focalPointFar", focalPointFar);
@@ -75,8 +76,6 @@ public class ShaderDoF extends IvShaderInstance2D
                 }
             }
         }
-
-        setUniformFloats("depthRange", zNear, zFar);
 
         stopUsingShader();
     }

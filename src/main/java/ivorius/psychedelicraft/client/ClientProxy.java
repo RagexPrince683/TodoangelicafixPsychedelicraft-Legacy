@@ -143,12 +143,22 @@ public class ClientProxy implements PSProxy
 
         if (configID == null || configID.equals(CATEGORY_VISUAL))
         {
-            PSRenderStates.setShader3DEnabled(config.get(CATEGORY_VISUAL, "shaderEnabled", true, "Whether 3D shaders are enabled - disabling them will disable drug visuals, but also fix graphical glitches.").getBoolean());
-            PSRenderStates.setShader2DEnabled(config.get(CATEGORY_VISUAL, "shader2DEnabled", true, "Whether 2D shaders are enabled - disabling them will disable drug visuals, but also fix graphical glitches.").getBoolean());
+            PSRenderStates.setShader3DEnabled(config.get(CATEGORY_VISUAL, "shaderEnabled", true,
+                "Retained legacy geometry-shader setting. Active screen effects use shader2DEnabled.").getBoolean());
+            boolean postEnabled = config.get(CATEGORY_VISUAL, "shader2DEnabled", true,
+                "Enable completed-world post-processing, including drug, heat and water effects.").getBoolean();
+            PSRenderStates.setShader2DEnabled(postEnabled);
             PSRenderStates.sunFlareIntensity = (float) config.get(CATEGORY_VISUAL, "sunFlareIntensity", 0.25).getDouble();
+            ivorius.psychedelicraft.client.rendering.post.PsychePostProcessor.sunFlareIntensity = PSRenderStates.sunFlareIntensity;
             PSRenderStates.doHeatDistortion = config.get(CATEGORY_VISUAL, "biomeHeatDistortion", true).getBoolean();
+            ivorius.psychedelicraft.client.rendering.post.PsychePostProcessor.heatEnabled = PSRenderStates.doHeatDistortion;
+            ivorius.psychedelicraft.client.rendering.post.PsychePostProcessor.debug = config.getBoolean(
+                "debugPostProcessing", CATEGORY_VISUAL, false,
+                "Log owned post targets, scene capture, effect order and GL errors. Progress is sampled; errors are always logged.");
             PSRenderStates.doWaterDistortion = config.get(CATEGORY_VISUAL, "waterDistortion", true).getBoolean();
+            ivorius.psychedelicraft.client.rendering.post.PsychePostProcessor.waterEnabled = PSRenderStates.doWaterDistortion;
             PSRenderStates.doMotionBlur = config.get(CATEGORY_VISUAL, "motionBlur", true).getBoolean();
+            ivorius.psychedelicraft.client.rendering.post.PsychePostProcessor.motionEnabled = PSRenderStates.doMotionBlur;
 //        DrugShaderHelper.doShadows = config.get(CATEGORY_VISUAL, "doShadows", true).getBoolean(true);
             PSRenderStates.doShadows = false;
 

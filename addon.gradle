@@ -36,8 +36,18 @@ tasks.register("copyMods", Copy) {
 
 def clientDevMods = files(fileTree(dir: "devmods/client", include: ["*.jar"]))
 
+// Opt-in, pinned compatibility run; never a published or dedicated-server dependency.
+configurations.create("angelicaClient")
+if (project.hasProperty("angelicaDev")) {
+    dependencies.add("angelicaClient", "com.github.GTNewHorizons:Angelica:2.1.29:dev")
+    dependencies.add("angelicaClient", "com.github.GTNewHorizons:GTNHLib:0.11.4:dev")
+    // GTNHLib already supplies UniMixins; adding the older all-in-one artifact
+    // alongside it makes Forge reject duplicate mod IDs.
+}
+
 tasks.named("runClient").configure {
     classpath += clientDevMods
+    if (project.hasProperty("angelicaDev")) classpath += configurations.angelicaClient
 }
 //task copyMods(type: Copy, dependsOn: "extractUserDev") {
 //    from { configurations.provided }

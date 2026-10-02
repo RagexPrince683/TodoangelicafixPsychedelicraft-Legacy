@@ -2,44 +2,146 @@
 ============
 <p>A continuation of Psychedelicraft for 1.7.10</p>
 <p>It's a fork of original repository which uses GTNH Gradle for build, it allows you to build it even with newer version of JDK & Gradle</p>
-<p>This fork disables most GL ERROR checks so it doesn't infinitely spam console with Angelica or OptiFine. Some effects surprisingly work even with other shader mods</p>
+<p>OpenGL diagnostics are opt-in so normal play does not flood the console.</p>
 
-## Angelica rendering compatibility
+## Post-processing backend rewrite
 
-Drug simulation and rendering are separate. Once Minecraft and Angelica have
-completed a view (including terrain, sky, weather, hand placement, and the
-pre-shader overlays), Psychedelicraft captures that view exactly once. It runs
-world-wave/fractal/pulse distortion first, followed by environmental distortion,
-color, blur, bloom, double-vision, noise, and digital passes. HUD and post-shader
-drug overlays retain their existing later placement.
+Phase 1 has received visual acceptance and a zero-change full RGBA identity
+comparison on the pinned client. Phase 2 color-only heat has received visual acceptance with clean shader-pass
+GL diagnostics. Phase 3 water distortion and fading wet-lens droplets have also
+received visual acceptance with clean pass diagnostics. Phase 4 restores drug
+screen effects on the new backend and has received visual acceptance. Phase 5
+adds dedicated motion history and has received visual acceptance with clean
+motion/history diagnostics. Phase 6 independent lens-flare composition has also
+received visual acceptance, including glare with heat and motion blur, with clean
+draw/restoration diagnostics. All six stages use the new authoritative backend.
+These results apply to the pinned Angelica client without a shaderpack; they do
+not certify every shaderpack or third-party view implementation. JourneyMap was
+excluded from further checks at the user's direction.
+Gameplay, drug simulation, camera effects and existing HUD overlays are unchanged.
+The legacy screen wrappers and `IvOpenGLTexturePingPong` are retained temporarily
+as inactive source; initialization and world events no longer invoke their chain.
+Legacy screen-render/lifecycle entry points delegate to the new processor rather
+than retaining an alternate scene capture or effect chain. The old per-entity
+lens renderer is no longer instantiated. The legacy `shaderEnabled` key controls
+retired geometry-shader source only; active screen effects use `shader2DEnabled`.
 
-Psychedelicraft owns two reusable color textures, their intermediate framebuffer,
-and its shader programs. Minecraft or Angelica continues to own the captured
-scene, final destination, and depth attachment. A pass always samples one owned
-texture while drawing to the other; only a completely successful chain is
-composed back to the incoming destination. No drug program remains active while
-world geometry is submitted, and no private depth pass recursively renders the
-world.
+`PsychePostProcessor.render(partialTicks)` runs immediately after
+`ForgeHooksClient.dispatchRenderLast`, inside the main `renderWorld` call. The
+exact Angelica [`2.1.29`](https://github.com/GTNewHorizons/Angelica/tree/2.1.29)
+checkout, commit `0e793806183fd74b6bac80c5ac71446946614406`, confirms that its
+`MixinEntityRenderer` finalizes the world before that hook and `FinalPassRenderer`
+outputs to Minecraft's main color attachment and rebinds the main framebuffer.
+Without shaderpacks this precedes vanilla hand rendering. With shaderpacks,
+Angelica has already rendered its opaque/translucent hand into the finished
+image; those hand pixels intentionally remain part of the source. The HUD is
+rendered later in both cases.
 
-Psychedelicraft's screen effects preserve the framebuffer, shader, viewport,
-matrix, texture-unit, texture-binding, blend, depth, alpha, and color state that
-was active when each effect began. The post-processing pipeline uses reusable
-ping-pong targets and keeps distinct framebuffer read/draw ownership intact on
-OpenGL 3.0 renderers. Scene capture explicitly reads the framebuffer containing
-the completed world rather than an independently bound stale read target. Lens
-flares use matrices captured during the normal pre-sky world stage for the same
-render-view entity, and do not require an active shaderpack. Because Angelica
-composes Psychedelicraft's drug shaders after the world, lens flares are skipped
-only on views where a prepared drug shader will actually render. They return
-automatically once the final drug shader is inactive.
+The processor accepts only an outer main-player view bracketed around the actual
+`updateCameraAndRender -> renderWorld` invocation. Nested world calls, changed
+view entities and auxiliary views are excluded. Processing is limited to one
+completed-world stage per call (the second eye for anaglyph). The source is always
+Minecraft's named main framebuffer, with its attachment identity, completeness
+and display-sized texture checked explicitly; incoming bindings do not identify
+an image or an intermediate target.
 
-Displaced scene samples are clamped to the centers of the captured viewport's
-outermost texels. This preserves drug distortion without allowing horizontal
-offsets to wrap terrain from the opposite edge of the scene.
+`PsychePostTarget` owns one FBO and one exact display-sized RGBA8 color texture.
+There are two color surfaces, `sceneA` and `sceneB`, with no depth attachments.
+Phase 1 blits the completed main image into A, performs an identity A-to-B blit,
+then blits B back to the main framebuffer. Every copy covers the entire image at
+origin zero with nearest filtering. No shader, matrix stack, Tessellator, legacy
+screen-copy fallback or shared Angelica attachment participates. The new backend
+requires OpenGL 3.0 or OpenGL 2.1 with `ARB_framebuffer_object`, independently of Angelica's
+presence. Unsupported hardware reports this limitation without activating the
+legacy chain.
 
-The `REFERENCEFOLDER/AngelicaSRC` tree is audit-only and is not compiled, bundled,
-or modified as an Angelica repair. Runtime testing should include Angelica with
-shaderpacks both disabled and enabled.
+Resize, world/dimension change and resource reload destroy owned targets; the
+next accepted view recreates and validates both surfaces. World unload releases
+them on the client thread. Every pass fully overwrites its destination. Motion
+blur alone owns an additional full-resolution history image, allocated only when
+needed; it is never a third scene ping-pong surface. Initial activation copies
+the current processed scene, and only a completely rendered and composited frame
+updates history. Disable/re-enable, resize, world/dimension/reload/view changes,
+pausing and render gaps over 250 ms invalidate it. The next temporal pass starts
+from current color. `visual.motionBlur` retains its existing toggle and simulation
+strengths; frame-time-scaled persistence makes trail decay independent of render
+rate. History is written before any later lens overlay, so glare cannot accumulate
+in temporal state. Other effects read current scene color only.
+
+The identity backend only changes framebuffer bindings/selectors, viewport,
+scissor enable, framebuffer sRGB, texture-unit-zero binding/active unit, and pixel
+unpack binding for allocation. It restores those through ordinary GL entry points
+redirected by Angelica's `GLSMRedirector`; it uses no cache bypass, raw backend
+calls or native attribute-stack inference. Identity copying leaves programs, blend/depth/color masks, matrices and client
+arrays untouched. The shader-draw scope explicitly saves/restores its program,
+owned VAO/array-buffer binding, color/depth masks, enable flags, polygon mode,
+clip/sample coverage, texture bindings and sampler objects on units zero/one.
+It never loads matrices or uses Tessellator/fixed-function shader inputs. Main-FBO selectors are restored before
+caller bindings. The synthetic legacy skybox is no longer drawn or used to clear
+world depth. `bypassPingPongBuffer`, `disableDepthBuffer` and `renderFakeSkybox` are
+retained configuration keys but do not control the new color-only backend.
+
+Use `./gradlew runClient -PangelicaDev` for the exact pinned client environment:
+Angelica 2.1.29, GTNHLib 0.11.4, and transitive UniMixins. They remain client-only
+development dependencies and are not published or added to `runServer`. Avoid
+installing duplicate copies in development-mod directories. The reference source
+under `REFERENCEFOLDER/AngelicaSRC` is audit-only and is not the authoritative
+version-specific checkout.
+
+`visual.shader2DEnabled` enables/disables the new backend. Diagnostic option
+`visual.debugPostProcessing` defaults to false. When enabled, it reports entry,
+capture/source/owned FBOs, completeness, dimensions, identity/composition order
+and stage-specific GL errors. Successful progress is sampled to keep logs small;
+errors are always reported. After each target recreation it also compares every
+RGBA pixel of the original and returned main image in GPU readback memory and
+reports the number changed. This creates no image/test artifacts and is an
+identity-only diagnostic, not a claim of visual acceptance.
+
+Heat uses a new GLSL shader with two animated layers from the existing noise
+asset, the original biome strength (up to 0.01 UV), and texel-center UV bounds.
+It samples only current scene color and noise, with no depth requirement. Its
+owned clip-space quad and explicit inputs/outputs require OpenGL 3.0; older
+hardware with only the framebuffer extension retains identity copying and
+reports the shader capability limitation. `visual.biomeHeatDistortion` controls
+heat independently of the overall post-processing enable setting. Water retains
+the existing 0.025 underwater strength at a slower animation rate, independently
+controlled by `visual.waterDistortion`. Droplet refraction follows the existing
+wet-screen timer and `visual.waterOverlayEnabled`, with two sliding layers of the
+existing droplet asset. Both sample only current scene color.
+All shader effects share `FullscreenPostEffect` and alternate only A/B; the
+last written target is composited once. Core-profile polygon-mode restoration
+uses its single joint mode, avoiding a nonexistent second result slot.
+
+Drug parameters are sampled once into `PostContext` from the existing simulation.
+The ordered chain is waves/fractal/pulse/contrast/color rotation/saturation,
+separable blur, radial blur, double vision, colored bloom, bloom, noisy vertical
+distortion, digital pixelation/palette/glyphs, then heat, water and wet droplets.
+Blur and bloom expose individual axis/repetition passes to the processor, which
+owns every A/B swap. Pause-menu blur retains its existing setting and tick fade.
+Noise uses a fixed sample budget and a time-derived seed; digital uses the existing
+glyph atlas and pixel-scale settings with color-only brightness. All scene samples
+are clamped to texel centers. Radial blur has a new pass, but remains inactive
+because the existing simulation never requested it. Depth-of-field settings are
+retained but depth-dependent DoF is inactive in this color-only replacement.
+Only the final motion-blur pass reads previous frames. No pass changes drug simulation.
+
+Lens glare uses an independent GLSL sprite overlay on the explicitly named main
+framebuffer after final composition and history commit. It has no scene/history
+texture input or capture API. It reuses the flare/blindness assets, sizes, positions,
+rain/occlusion smoothing and `visual.sunFlareIntensity`; glare remains available
+when screen effects are disabled. Current-view camera matrices project the sun
+as a direction at infinity, with facing rejection but no finite far-plane depth
+test. Views without a sky do not emit glare. The overlay preserves destination
+alpha and restores blend factors/equations in addition to the shared draw state.
+
+Phase 1 must be tested in a normal world and the previous black-screen desert,
+with rapid rotation, resize/fullscreen, F1 and leave/rejoin. A normal visible
+world, no stale regions/new GL errors, and zero changed identity pixels are the
+first gate. Heat is phase 2, water phase 3, drug effects phase 4, dedicated motion
+history phase 5 and current-camera lens-flare composition phase 6. Each phase
+requires an in-game visual test before implementation proceeds to the next.
+The phase gates have passed. The listed scenarios remain a regression checklist
+for other installations, shaderpacks and third-party render views.
 
 Psychedelicraft is self-contained and does **not** require IvToolkit. Other mods in
 your installation may still require IvToolkit independently.
@@ -52,10 +154,10 @@ The Psychedelicraft JAR contains the narrowly scoped implementations it uses for
   `1`, with the legacy field order and payload encoding preserved). Incoming
   updates are validated and applied from the client tick thread.
 * Multiblock, inventory, NBT, range, chat, Bézier, and ray-tracing helpers.
-* Shader programs, framebuffer/depth resources, ping-pong textures, OpenGL state
-  helpers, matrices, particles, and rendering primitives. Graphics resources are
-  released before replacement, recreated after a resource reload, and resized
-  when the display changes.
+* The new client post backend under `client.rendering.post`, plus internal
+  matrices, particles, rendering primitives and retained inactive legacy shader
+  helpers. Owned graphics resources are released on replacement/unload and
+  recreated lazily after resource reload or display changes.
 * The focused ASM transformer and development-name remapping support required by
   Psychedelicraft's render, camera, OpenGL, and sound hooks.
 
@@ -77,9 +179,9 @@ Psychedelicraft only transforms these exact Minecraft classes:
 
 It does not transform MC Heli or any other mod. OpenGL calls made inside other
 mods or unlisted vanilla classes are deliberately not intercepted. Consequently,
-unusual third-party render paths may have less accurate psychedelic shader
-compositing because their render-state changes are not mirrored; normal effects
-using the approved vanilla hooks remain available.
+third-party nested views must enter the normal world scope to be identified as
+auxiliary views. The new screen passes establish their own state and do not use
+the legacy mirror to infer framebuffer, viewport, source texture or shader state.
 
 ## Quick guide:
 
