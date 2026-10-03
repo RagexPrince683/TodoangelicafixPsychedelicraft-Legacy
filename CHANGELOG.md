@@ -824,3 +824,9 @@ this source-only migration.
 * Replace the rendering implementation diary with an overview of the mod, installation instructions, a first harvesting and drying guide, and useful player/server settings.
 * Explain how to set up development, launch a test client, build a mod JAR, and try local mods or the pinned Angelica client.
 * Correct the reality-rift default to disabled and retain concise dependency, graphics, and NEI limitations.
+
+## 2026-10-02 23:29 — Preserve vanilla first-person depth isolation
+
+* Treat the owned color renderer's null legacy render pass as normal rendering, allowing vanilla's existing hand depth clear and block overlays. Preserve suppression only when a legacy auxiliary pass is explicitly active.
+* Prevent completed world depth from occluding the first-person arm and held items without changing depth testing, copying depth, adding a clear or introducing an Angelica dependency. The same correction applies to Angelica 2.1.29 and the control client.
+* Update the renderer documentation to describe the authoritative owned color pipeline and its world/composition/hand lifecycle.

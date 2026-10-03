@@ -175,6 +175,9 @@ public class PSCoreHandlerClient
     @SubscribeEvent
     public void renderHand(RenderHandEvent event)
     {
+        // The owned color pipeline has no legacy render pass (null). Only an
+        // explicitly active auxiliary pass may suppress vanilla's hand depth clear.
+        if (PSRenderStates.currentRenderPass == null) return;
         if (event instanceof RenderHandEvent.Pre)
         {
             if (!"Default".equals(PSRenderStates.currentRenderPass))
@@ -254,7 +257,7 @@ public class PSCoreHandlerClient
     @SubscribeEvent
     public void renderBlockOverlay(RenderBlockOverlayEvent event)
     {
-        if (!"Default".equals(PSRenderStates.currentRenderPass))
+        if (PSRenderStates.currentRenderPass != null && !"Default".equals(PSRenderStates.currentRenderPass))
         {
             event.setCanceled(true);
         }
